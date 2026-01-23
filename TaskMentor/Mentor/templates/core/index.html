@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+
+{% block title %}TaskMentor - Главная{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1 class="hero-title">TaskMentor</h1>
+        <p class="hero-subtitle">Умный помощник для управления клиентами</p>
+        
+        <div class="role-selection">
+            <div class="role-card teacher-card" data-role="teacher">
+                <div class="role-icon">👨‍🏫</div>
+                <h3>Учитель</h3>
+                <p>Тренер, Коуч, Психолог</p>
+            </div>
+            
+            <div class="role-card student-card" data-role="student">
+                <div class="role-icon">👨‍🎓</div>
+                <h3>Ученик</h3>
+                <p>Клиент</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно идентификации -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="loginForm">
+            <h2 id="modalTitle">Идентификация учителя</h2>
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="Пароль" required>
+                </div>
+                <button type="submit" class="btn-login">Войти</button>
+                <a href="{% url 'register' %}?role=<span id='selectedRole'></span>" 
+                   class="register-link" id="registerLink">Зарегистрироваться</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const teacherCard = document.querySelector('.teacher-card');
+    const studentCard = document.querySelector('.student-card');
+    const modal = document.getElementById('authModal');
+    const closeBtn = document.querySelector('.close');
+    const registerLink = document.getElementById('registerLink');
+    const modalTitle = document.getElementById('modalTitle');
+    const selectedRoleSpan = document.getElementById('selectedRole');
+    
+    teacherCard.addEventListener('click', function() {
+        modalTitle.textContent = 'Идентификация учителя';
+        document.getElementById('loginForm').dataset.role = 'teacher';
+        modal.style.display = 'flex';
+    });
+    
+    studentCard.addEventListener('click', function() {
+        modalTitle.textContent = 'Идентификация ученика';
+        document.getElementById('loginForm').dataset.role = 'student';
+        modal.style.display = 'flex';
+    });
+    
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
