@@ -27,18 +27,23 @@
 <!-- Модальное окно идентификации -->
 <div id="authModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
+        <span class="close">&times</span>
         <div id="loginForm">
-            <h2 id="modalTitle">Идентификация учителя</h2>
-            <form method="post" action="{% url 'login' %}">
+            <h2 id="modalTitle">Идентификация</h2>
+            <form method="post" id="authForm">
                 {% csrf_token %}
+                <input type="hidden" name="role" id="formRole">
                 <div class="form-group">
-                    <input type="email" name="email" placeholder="Email" required>
-                    <input type="password" name="password" placeholder="Пароль" required>
+                    <input type="email" name="email" placeholder="Email" required class="form-control mb-3">
+                    <input type="password" name="password" placeholder="Пароль" required class="form-control mb-3">
                 </div>
-                <button type="submit" class="btn-login">Войти</button>
-                <a href="{% url 'register' %}?role=<span id='selectedRole'></span>" 
-                   class="register-link" id="registerLink">Зарегистрироваться</a>
+                <button type="submit" class="btn btn-primary w-100 mb-2">Войти</button>
+                <button type="button" onclick="goToRegister()" class="btn btn-outline-primary w-100">Регистрация</button>
+<!--                <a href="#" onclick="selectRole(event)" class="btn btn-primary">-->
+<!--                    Регистрация <span id="roleText">(выберите роль)</span></a>-->
+                <a href="/accounts/google/login/" class="btn btn-danger">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" width="20" alt="">
+                    Войти через Google</a>
             </form>
         </div>
     </div>
@@ -52,31 +57,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const studentCard = document.querySelector('.student-card');
     const modal = document.getElementById('authModal');
     const closeBtn = document.querySelector('.close');
-    const registerLink = document.getElementById('registerLink');
     const modalTitle = document.getElementById('modalTitle');
-    const selectedRoleSpan = document.getElementById('selectedRole');
-    
+    const formRole = document.getElementById('formRole');
+
+    // Открытие модалки по роли
     teacherCard.addEventListener('click', function() {
         modalTitle.textContent = 'Идентификация учителя';
-        document.getElementById('loginForm').dataset.role = 'teacher';
+        formRole.value = 'teacher';
         modal.style.display = 'flex';
     });
-    
+
     studentCard.addEventListener('click', function() {
         modalTitle.textContent = 'Идентификация ученика';
-        document.getElementById('loginForm').dataset.role = 'student';
+        formRole.value = 'student';
         modal.style.display = 'flex';
     });
-    
+
+    // Закрытие модалки
     closeBtn.addEventListener('click', function() {
         modal.style.display = 'none';
     });
-    
+
     window.addEventListener('click', function(event) {
         if (event.target === modal) {
             modal.style.display = 'none';
         }
     });
+
+    // Форма отправляется на /login/ с role=teacher/student
+    document.getElementById('authForm').addEventListener('submit', function(e) {
+        const role = formRole.value;
+        if (role) {
+            this.action = `/login/?role=${role}`;
+        }
+    });
 });
+
+// Переход на страницу регистрации по роли
+function goToRegister() {
+    const role = document.getElementById('formRole').value;
+    if (role === 'teacher') {
+        window.location.href = "{% url 'teacher_register' %}";
+    } else if (role === 'student') {
+        window.location.href = "{% url 'student_register' %}";
+    } else {
+        alert('Выберите роль!');
+    }
+}
 </script>
 {% endblock %}
