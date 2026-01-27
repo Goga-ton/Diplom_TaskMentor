@@ -1,10 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'core/base.html' %}
 
-</body>
-</html>
+{% block content %}
+<div class="container mt-5">
+  <h2>Вход ({{ role }})</h2>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="mb-3">
+      {{ form.username.label_tag }}
+      {{ form.username }}
+    </div>
+    <div class="mb-3">
+      {{ form.password.label_tag }}
+      {{ form.password }}
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Войти</button>
+  </form>
+</div>
+{% endblock %}

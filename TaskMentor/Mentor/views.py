@@ -90,7 +90,8 @@ def user_login(request):
         if form.is_valid():
             user = form.get_user()
             if role and user.user_type != role:
-                messages.error(request, 'Неверная роль для этого аккаунта')
+                messages.error(request, f'Вы зарегистрированы как {user.user_type}, выберите соответствующую роль.')
+                form = EmailAuthenticationForm(request)
             else:
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
                 login(request, user)
