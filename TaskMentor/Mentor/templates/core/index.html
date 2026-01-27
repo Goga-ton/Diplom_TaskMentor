@@ -37,11 +37,11 @@
                     <input type="email" name="email" placeholder="Email" required class="form-control mb-3">
                     <input type="password" name="password" placeholder="Пароль" required class="form-control mb-3">
                 </div>
-                <button type="submit" class="btn btn-primary w-100 mb-2">Войти</button>
-                <button type="button" onclick="goToRegister()" class="btn btn-outline-primary w-100">Регистрация</button>
-<!--                <a href="#" onclick="selectRole(event)" class="btn btn-primary">-->
-<!--                    Регистрация <span id="roleText">(выберите роль)</span></a>-->
-                <a href="/accounts/google/login/" class="btn btn-danger">
+                <button type="submit" class="btn btn-outline-primary w-100 mb-2">Войти</button>
+                <button type="button" onclick="goToRegister()" class="btn btn-outline-primary w-100 mb-3"
+                        id="registerBtn">Регистрация
+                </button>
+                <a href="/accounts/google/login/" class="btn btn-danger w-70 float-end">
                     <img src="https://developers.google.com/identity/images/g-logo.png" width="20" alt="">
                     Войти через Google</a>
             </form>
@@ -64,12 +64,14 @@ document.addEventListener('DOMContentLoaded', function() {
     teacherCard.addEventListener('click', function() {
         modalTitle.textContent = 'Идентификация учителя';
         formRole.value = 'teacher';
+        document.getElementById('registerBtn').textContent = 'Регистрация';
         modal.style.display = 'flex';
     });
 
     studentCard.addEventListener('click', function() {
         modalTitle.textContent = 'Идентификация ученика';
         formRole.value = 'student';
+        document.getElementById('registerBtn').textContent = 'Отправить заявку на регистрацию';
         modal.style.display = 'flex';
     });
 
@@ -99,7 +101,7 @@ function goToRegister() {
     if (role === 'teacher') {
         window.location.href = "{% url 'teacher_register' %}";
     } else if (role === 'student') {
-        window.location.href = "{% url 'student_register' %}";
+        window.location.href = "{% url 'student_application' %}";
     } else {
         alert('Выберите роль!');
     }

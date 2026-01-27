@@ -4,21 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d13756d8-fb02-434b-bfba-8b1f2ce19e38" name="Changes" comment="commit_1">
+    <list default="true" id="d13756d8-fb02-434b-bfba-8b1f2ce19e38" name="Changes" comment="commit_2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/apps.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/auth/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/auth/register.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/teacher_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/teacher_dashboard.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/TaskMentor/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/TaskMentor/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/TaskMentor/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/TaskMentor/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/static/css/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,12 +61,13 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Anton_B/PycharmProjects/Diplom_TaskMentor/TaskMentor/Mentor/templates/core&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Anton_B/PycharmProjects/Diplom_TaskMentor/TaskMentor/Mentor/templates/core/auth&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\Mentor\templates\core\auth" />
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\Mentor\templates\core" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -119,12 +114,21 @@
       <option name="project" value="LOCAL" />
       <updated>1769153434501</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="commit_2">
+      <option name="closed" value="true" />
+      <created>1769438909764</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1769438909764</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial Django project setup for TaskMentor" />
     <MESSAGE value="commit_1" />
-    <option name="LAST_COMMIT_MESSAGE" value="commit_1" />
+    <MESSAGE value="commit_2" />
+    <option name="LAST_COMMIT_MESSAGE" value="commit_2" />
   </component>
 </project>

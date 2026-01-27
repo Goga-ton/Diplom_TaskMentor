@@ -1,7 +1,32 @@
-{% extends 'core/base.html' %}
-{% block content %}
-<div class="container">
-    <h1>Личный кабинет Учителя</h1>
-    <p>Пустая страница готова. TODO: управление клиентами.</p>
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
+        
+        {% for app in applications %}
+        <div class="card mb-3">
+            <div class="card-header">
+                {{ app.email }} ({{ app.nickname }})
+                <span class="badge bg-warning ms-2">{{ app.status|title }}</span>
+                <small class="text-muted float-end">{{ app.created_at|date:"d.m.Y H:i" }}</small>
+            </div>
+            <div class="card-body">
+                <p><strong>Имя:</strong> {{ app.first_name }}</p>
+                <p><strong>Телефон:</strong> {{ app.phone }}</p>
+                <p><strong>Telegram:</strong> {{ app.telegram|default:"Не указан" }}</p>
+                {% if app.status == 'pending' %}
+                    <a href="#" class="btn btn-success btn-sm" onclick="approveApplication({{ app.id }})">
+                        <i class="fas fa-check"></i> Зарегистрировать
+                    </a>
+                    <a href="#" class="btn btn-danger btn-sm" onclick="rejectApplication({{ app.id }})">
+                        <i class="fas fa-times"></i> Отклонить
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            Нет новых заявок
+        </div>
+        {% endfor %}
+    </div>
 </div>
-{% endblock %}

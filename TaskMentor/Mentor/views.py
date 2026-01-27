@@ -4,12 +4,17 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.contrib.auth import get_user_model
 
+from .models import StudentApplication
 from .forms import (
     TeacherRegistrationForm,
-    StudentRegistrationForm,
+    StudentApplicationForm,
     EmailAuthenticationForm,
+    # StudentRegistrationForm,
 )
+
+User = get_user_model()
 
 @csrf_protect
 def index(request):
@@ -17,12 +22,12 @@ def index(request):
 
 @csrf_protect
 def teacher_register(request):
-    if request.method == 'POST':
+    if request.method == 'POST': # так и не понял что проверяет эта строка
         form = TeacherRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            login(request, user)
+            user.backend = 'django.contrib.auth.backends.ModelBackend' #данная строка опредеяет кто разрешает вход для строки ниже
+            login(request, user) #данная строка производит автоматический код с разрешения полученного в предыдущей строке
             return redirect('teacher_dashboard')
     else:
         form = TeacherRegistrationForm()
@@ -33,23 +38,49 @@ def teacher_register(request):
     })
 
 
-@csrf_protect
-def student_register(request):
+def student_application(request):
     if request.method == 'POST':
-        form = StudentRegistrationForm(request.POST)
+        form = StudentApplicationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            login(request, user)
-            login(request, user)
-            return redirect('student_dashboard')
+            StudentApplication.objects.create(
+                teacher=User.objects.get(email=form.cleaned_data['teacher_email']),
+                email=form.cleaned_data['email'],
+                first_name=form.cleaned_data['first_name'],
+                phone=form.cleaned_data['phone'],
+                telegram=form.cleaned_data.get('telegram', ''),
+                nickname=form.cleaned_data['nickname']
+            )
+            return render(request, 'core/auth/student_application.html', {
+                'form': form,
+                'title': 'Заявка отправлена! Учитель получит уведомление.',
+                'message': 'Спасибо! Данные отправлены учителю.'
+            })
     else:
-        form = StudentRegistrationForm()
-    return render(request, 'core/auth/register.html', {
+        form = StudentApplicationForm()
+
+    return render(request, 'core/auth/student_application.html', {
         'form': form,
-        'role': 'student',
-        'title': 'Регистрация ученика',
+        'title': 'Отправить заявку на регистрацию'
     })
+
+# Блок регистрации ученика
+# @csrf_protect
+# def student_register(request):
+#     if request.method == 'POST':
+#         form = StudentRegistrationForm(request.POST)
+#         if form.is_valid():
+#             user = form.save()
+#             user.backend = 'django.contrib.auth.backends.ModelBackend'
+#             login(request, user)
+#             login(request, user)
+#             return redirect('student_dashboard')
+#     else:
+#         form = StudentRegistrationForm()
+#     return render(request, 'core/auth/register.html', {
+#         'form': form,
+#         'role': 'student',
+#         'title': 'Регистрация ученика',
+#     })
 
 @csrf_protect
 def user_login(request):
@@ -82,6 +113,14 @@ def user_logout(request):
 
 @login_required
 def teacher_dashboard(request):
-    if request.user.user_type != 'teacher':
-        return HttpResponseForbidden("Доступ только учителям")
-    return render(request, 'core/teacher_dashboard.html')
+    if request.user.user_type != 'teacher':  # Проверка роли
+        return redirect('index')
+
+    applications = StudentApplication.objects.filter(
+        teacher=request.user,
+        status='pending'
+    ).order_by('-created_at')
+
+    return render(request, 'core/teacher_dashboard.html', {
+        'applications': applications
+    })

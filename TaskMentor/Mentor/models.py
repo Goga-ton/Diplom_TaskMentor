@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 USER_TYPE_CHOICES = [
@@ -79,6 +80,17 @@ class StudentProfile(models.Model):
         verbose_name = 'Профиль ученика'
         verbose_name_plural = 'Профили учеников'
         unique_together = ['user', 'teacher']  # один учитель на ученика
+
+class StudentApplication(models.Model):
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_applications')
+    email = models.EmailField()
+    first_name = models.CharField(max_length=30)
+    phone = models.CharField(max_length=20)
+    telegram = models.CharField(max_length=50, blank=True)
+    nickname = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='pending')  # pending-новая (по умолчанию), approved учитель зарегистрировал ученика., rejected — учитель отклонил.
+
 
 
 def __str__(self):

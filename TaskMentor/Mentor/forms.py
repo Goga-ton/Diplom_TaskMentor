@@ -84,29 +84,47 @@ class TeacherRegistrationForm(BaseRegistrationForm):
             )
         return user
 
+    # Блок для регистрации студента еще пригодиться для Учителя
+# class StudentRegistrationForm(BaseRegistrationForm):
+#     nickname = forms.CharField(
+#         label='Псевдоним',
+#         widget=forms.TextInput(attrs={'class': 'form-control'})
+#     )
+#     teacher = forms.ModelChoiceField(
+#         label='Ваш наставник',
+#         queryset=User.objects.filter(user_type='teacher'),
+#         widget=forms.Select(attrs={'class': 'form-control'})
+#     )
 
-class StudentRegistrationForm(BaseRegistrationForm):
-    nickname = forms.CharField(
-        label='Псевдоним',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    teacher = forms.ModelChoiceField(
-        label='Ваш наставник',
-        queryset=User.objects.filter(user_type='teacher'),
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
+    # def save(self, commit=True):
+    #     user = super().save(commit=False)
+    #     user.user_type = 'student'
+    #     if commit:
+    #         user.save()
+    #         StudentProfile.objects.create(
+    #             user=user,
+    #             nickname=self.cleaned_data['nickname'],
+    #             teacher=self.cleaned_data['teacher'],
+    #         )
+    #     return user
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.user_type = 'student'
-        if commit:
-            user.save()
-            StudentProfile.objects.create(
-                user=user,
-                nickname=self.cleaned_data['nickname'],
-                teacher=self.cleaned_data['teacher'],
-            )
-        return user
+class StudentApplicationForm(forms.Form):
+    first_name = forms.CharField(label='Имя', max_length=30, required=True)
+    email = forms.EmailField(label='Ваш Email', max_length=254, required=True)
+    nickname = forms.CharField(label='Никнейм', max_length=50, required=True)
+    phone = forms.CharField(label='Телефон', max_length=20, required=False)
+    telegram = forms.CharField(label='Telegram', max_length=50, required=False)
+    teacher_email = forms.EmailField(label='Email Учителя (из системы)', required=True)
+
+    def clean_teacher_email(self):
+        teacher_email = self.cleaned_data['teacher_email']
+        # Проверка: существует User с role='teacher' и этим email
+        if not User.objects.filter(email=teacher_email, user_type='teacher').exists():
+            raise forms.ValidationError('Указанный Email учителя не найден в системе!')
+        return teacher_email
+
+
+
 
 
 class EmailAuthenticationForm(AuthenticationForm):
