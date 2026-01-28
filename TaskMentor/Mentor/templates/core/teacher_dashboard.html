@@ -1,32 +1,91 @@
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
-        
-        {% for app in applications %}
-        <div class="card mb-3">
-            <div class="card-header">
-                {{ app.email }} ({{ app.nickname }})
-                <span class="badge bg-warning ms-2">{{ app.status|title }}</span>
-                <small class="text-muted float-end">{{ app.created_at|date:"d.m.Y H:i" }}</small>
-            </div>
-            <div class="card-body">
-                <p><strong>Имя:</strong> {{ app.first_name }}</p>
-                <p><strong>Телефон:</strong> {{ app.phone }}</p>
-                <p><strong>Telegram:</strong> {{ app.telegram|default:"Не указан" }}</p>
-                {% if app.status == 'pending' %}
-                    <a href="#" class="btn btn-success btn-sm" onclick="approveApplication({{ app.id }})">
-                        <i class="fas fa-check"></i> Зарегистрировать
-                    </a>
-                    <a href="#" class="btn btn-danger btn-sm" onclick="rejectApplication({{ app.id }})">
-                        <i class="fas fa-times"></i> Отклонить
-                    </a>
-                {% endif %}
+{% extends 'core/base.html' %}
+
+{% block title %}Личный кабинет учителя - TaskMentor{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Личный кабинет учителя</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <strong>Профиль</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Имя:</strong> {{ user.first_name }}</p>
+                    <p><strong>Телефон:</strong> {{ user.phone }}</p>
+                    <p><strong>Telegram:</strong> {{ user.telegram|default:"Не указан" }}</p>
+                </div>
             </div>
         </div>
-        {% empty %}
-        <div class="alert alert-info">
-            Нет новых заявок
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
+
+            {% for app in applications %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ app.email }}</strong> - {{ app.nickname }}
+                        <span class="badge bg-warning ms-2">{{ app.status.title }}</span>
+                    </div>
+                    <small class="text-muted">{{ app.created_at|date:"d.M.Y H:i" }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Имя:</strong> {{ app.firstname }}</p>
+                            <p><strong>Телефон:</strong> {{ app.phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Telegram:</strong> {{ app.telegram|default:"Не указан" }}</p>
+                        </div>
+                    </div>
+
+                    {% if app.status == 'pending' %}
+                    <div class="mt-3">
+                        <button class="btn btn-success btn-sm me-2" onclick="
+                            if(confirm('Одобрить заявку?')) {
+                                fetch('/toggle-app/{{ app.id }}/approve/', {
+                                    method: 'POST',
+                                    credentials: 'same-origin'
+                                }).then(r => r.json()).then(d => {
+                                    if(d.success) location.reload();
+                                    else alert(d.message);
+                                }).catch(e => alert('Ошибка'));
+                            }
+                        ">
+                            <i class="fas fa-check"></i> Одобрить
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="
+                            if(confirm('Отклонить заявку?')) {
+                                fetch('/toggle-app/{{ app.id }}/reject/', {
+                                    method: 'POST',
+                                    credentials: 'same-origin'
+                                }).then(r => r.json()).then(d => {
+                                    if(d.success) location.reload();
+                                    else alert(d.message);
+                                }).catch(e => alert('Ошибка'));
+                            }
+                        ">
+                            <i class="fas fa-times"></i> Отклонить
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                <h4>Заявок нет</h4>
+                <p>Заявки учеников будут появляться здесь автоматически.</p>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
+{% endblock %}

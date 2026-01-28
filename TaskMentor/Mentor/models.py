@@ -90,7 +90,7 @@ class StudentApplication(models.Model):
     nickname = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, default='pending')  # pending-новая (по умолчанию), approved учитель зарегистрировал ученика., rejected — учитель отклонил.
-
+    teacher_set_password = models.CharField(max_length=128, blank=True, null=True, help_text="Пароль, установленный учителем")
 
 
 def __str__(self):

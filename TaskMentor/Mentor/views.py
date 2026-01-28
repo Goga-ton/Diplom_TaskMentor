@@ -3,10 +3,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth import get_user_model
+import json
+from django.views.decorators.http import require_http_methods
+from django.urls import reverse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.hashers import make_password
 
-from .models import StudentApplication
+from .models import StudentApplication, StudentProfile
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
@@ -106,6 +111,31 @@ def user_login(request):
         'role': role,
     })
 
+@require_http_methods(["POST"])
+@csrf_protect
+def ajax_login(request):
+    role = request.POST.get('role')
+    email = request.POST.get('email')
+    password = request.POST.get('password')
+
+    user = authenticate(request, email=email, password=password)
+    if user:
+        if role and user.user_type != role:
+            return JsonResponse({
+                'success': False,
+                'message': f'Вы {user.user_type}. Выберите соответствующую роль.'
+            })
+
+        login(request, user)
+        return JsonResponse({
+            'success': True,
+            'redirect': reverse('teacher_dashboard') if user.user_type == 'teacher' else reverse('student_dashboard')
+        })
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Неверный email или пароль'
+    })
 
 @login_required
 def user_logout(request):
@@ -125,3 +155,24 @@ def teacher_dashboard(request):
     return render(request, 'core/teacher_dashboard.html', {
         'applications': applications
     })
+
+
+@login_required
+def toggle_application_status(request, app_id, action):
+    action in ['approve', 'reject']
+    if request.user.usertype != 'teacher':
+        return JsonResponse({'success': False, 'message': 'Только для учителей'})
+
+    app = get_object_or_404(StudentApplication, id=app_id, teacher=request.user)
+
+    if action == 'approve':
+        app.status = 'approved'
+        message = 'Заявка одобрена'
+    elif action == 'reject':
+        app.status = 'rejected'
+        message = 'Заявка отклонена'
+    else:
+        return JsonResponse({'success': False, 'message': 'Неверное действие'})
+
+    app.save()
+    return JsonResponse({'success': True, 'message': message})

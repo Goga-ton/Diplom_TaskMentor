@@ -59,51 +59,73 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeBtn = document.querySelector('.close');
     const modalTitle = document.getElementById('modalTitle');
     const formRole = document.getElementById('formRole');
+    const authForm = document.getElementById('authForm');
+    const registerBtn = document.getElementById('registerBtn');  // Если есть
 
-    // Открытие модалки по роли
+    // Открытие модалки
     teacherCard.addEventListener('click', function() {
-        modalTitle.textContent = 'Идентификация учителя';
+        modalTitle.textContent = 'Учитель';
         formRole.value = 'teacher';
-        document.getElementById('registerBtn').textContent = 'Регистрация';
+        if (registerBtn) registerBtn.textContent = 'Регистрация';
         modal.style.display = 'flex';
     });
 
     studentCard.addEventListener('click', function() {
-        modalTitle.textContent = 'Идентификация ученика';
+        modalTitle.textContent = 'Ученик';
         formRole.value = 'student';
-        document.getElementById('registerBtn').textContent = 'Отправить заявку на регистрацию';
+        if (registerBtn) registerBtn.textContent = 'Отправить заявку на регистрацию';
         modal.style.display = 'flex';
     });
 
-    // Закрытие модалки
     closeBtn.addEventListener('click', function() {
         modal.style.display = 'none';
     });
 
     window.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
+        if (event.target === modal) modal.style.display = 'none';
     });
 
-    // Форма отправляется на /login/ с role=teacher/student
-    document.getElementById('authForm').addEventListener('submit', function(e) {
+    // ✅ AJAX логин (заменяет старый submit)
+    authForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
         const role = formRole.value;
-        if (role) {
-            this.action = `/login/?role=${role}`;
+        const email = this.querySelector('input[name="email"]').value;
+        const password = this.querySelector('input[name="password"]').value;
+
+        if (!role || !email || !password) {
+            alert('Заполните все поля и выберите роль!');
+            return;
         }
+
+        fetch('/ajax-login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `role=${role}&email=${email}&password=${password}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сети. Попробуйте позже.');
+        });
     });
 });
-
-// Переход на страницу регистрации по роли
 function goToRegister() {
     const role = document.getElementById('formRole').value;
+    console.log('goToRegister called, role:', role);  // ✅ Дебаг
     if (role === 'teacher') {
-        window.location.href = "{% url 'teacher_register' %}";
-    } else if (role === 'student') {
-        window.location.href = "{% url 'student_application' %}";
+        window.location.href = '/register/teacher/';
     } else {
-        alert('Выберите роль!');
+        window.location.href = '/student/application/';
     }
 }
 </script>
