@@ -38,7 +38,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Имя:</strong> {{ app.firstname }}</p>
+                            <p><strong>Имя:</strong> {{ app.first_name }}</p>
                             <p><strong>Телефон:</strong> {{ app.phone }}</p>
                         </div>
                         <div class="col-md-6">
@@ -99,17 +99,25 @@ function toggleAppStatus(appId, action) {
     }
 }
 function approveWithPassword(appId) {
-    const passwordField = document.getElementById('password' + appId);
-    const password = passwordField.value;
-
+    const password = document.getElementById('password' + appId).value;
     if (!password) {
         alert('Введите пароль для ученика');
-        passwordField.focus();  // Фокус на поле
-        return false;
+        return;
     }
-
-    // Пароль введён → обычное одобрение (toggleAppStatus без изменений)
-    toggleAppStatus(appId, 'approve');
+    fetch(`/toggle-app/${appId}/approve/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Student-Password': password
+        },
+        credentials: 'same-origin'
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) location.reload();
+        else alert(d.message);
+    })
+    .catch(e => alert('Ошибка'));
 }
 </script>
 {% endblock %}

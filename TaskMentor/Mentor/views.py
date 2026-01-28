@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
 
-from .models import StudentApplication, StudentProfile
+from .models import StudentApplication, StudentProfile, User
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
@@ -156,24 +156,69 @@ def teacher_dashboard(request):
         'applications': applications
     })
 
+@login_required
+def student_dashboard(request):
+    if request.user.user_type != 'student':
+        return redirect('index')
+
+    profile = request.user.student_profile  # Связь из модели
+    return render(request, 'core/student_dashboard.html', {
+        'profile': profile,
+        'teacher': profile.teacher,
+    })
 
 @login_required
 def toggle_application_status(request, app_id, action):
     if action not in ['approve', 'reject']:
         return JsonResponse({'success': False, 'message': 'Неверное действие'})
+
     if request.user.user_type != 'teacher':
         return JsonResponse({'success': False, 'message': 'Только для учителей'})
 
     app = get_object_or_404(StudentApplication, id=app_id, teacher=request.user)
 
     if action == 'approve':
+        student_password = request.META.get('HTTP_X_STUDENT_PASSWORD')
+        if not student_password:
+            return JsonResponse({'success': False, 'message': 'Пароль не передан'})
+
+        # Проверяем, нет ли уже ученика с таким email
+        if User.objects.filter(email=app.email).exists():
+            return JsonResponse({'success': False, 'message': 'Ученик уже существует'})
+
+        # ✅ Фикс telegram UNIQUE (временное решение чтобы не делать миграцию, как будет делать минрацию ремим строку ниже возвращаем (telegram=app.telegram or '',) в student
+        telegram_candidate = app.telegram.strip() if app.telegram and app.telegram.strip() else ''
+        if telegram_candidate and User.objects.filter(telegram=telegram_candidate).exists():
+            telegram_candidate = ''  # fallback на пустую строку
+
+        # Создаём User (студент)
+        student = User.objects.create_user(
+            username=f"user_{app_id}",
+            email=app.email,
+            first_name=app.first_name,
+            phone=app.phone or '',
+            telegram=telegram_candidate,
+            user_type='student',
+            password=student_password  # Хешируется автоматически
+        )
+
+        # Создаём StudentProfile
+        StudentProfile.objects.create(
+            user=student,
+            nickname=app.nickname,
+            teacher=app.teacher
+        )
+
+        # Обновляем заявку
+        app.teacher_set_password = student_password  # Сохраняем в заявке
         app.status = 'approved'
-        message = 'Заявка одобрена'
+        app.save()
+        message = f'Ученик {app.nickname} создан'
     elif action == 'reject':
         app.status = 'rejected'
         message = 'Заявка отклонена'
     else:
         return JsonResponse({'success': False, 'message': 'Неверное действие'})
 
-    app.save()
+    # app.save()
     return JsonResponse({'success': True, 'message': message})

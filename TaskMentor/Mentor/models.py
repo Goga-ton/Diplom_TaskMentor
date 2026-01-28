@@ -44,6 +44,8 @@ class User(AbstractUser):
     phone = models.CharField('Телефон', max_length=20, blank=True)
     email = models.EmailField('Email адрес*', unique=True)
     telegram = models.SlugField('Telegram ID', unique=True, blank=True)
+    # перед миграцией заремить строку выше и разремить ниже и внести корректировки во views там есть описание
+    # telegram = models.SlugField('Telegram ID', unique=False, blank=True, null=True)
     objects = UserManager()
 
     # Скрываем стандартные поля Django
