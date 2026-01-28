@@ -3,7 +3,7 @@
 {% block title %}Личный кабинет учителя - TaskMentor{% endblock %}
 
 {% block content %}
-
+{% csrf_token %}
 <div class="container mt-5">
     <div class="row">
         <div class="col-12">
@@ -46,36 +46,16 @@
                         </div>
                     </div>
 
-                    {% if app.status == 'pending' %}
+<!--                    {% if app.status == 'pending' %}-->
                     <div class="mt-3">
-                        <button class="btn btn-success btn-sm me-2" onclick="
-                            if(confirm('Одобрить заявку?')) {
-                                fetch('/toggle-app/{{ app.id }}/approve/', {
-                                    method: 'POST',
-                                    credentials: 'same-origin'
-                                }).then(r => r.json()).then(d => {
-                                    if(d.success) location.reload();
-                                    else alert(d.message);
-                                }).catch(e => alert('Ошибка'));
-                            }
-                        ">
+                        <button class="btn btn-success btn-sm me-2" onclick="toggleAppStatus({{ app.id }}, 'approve')">
                             <i class="fas fa-check"></i> Одобрить
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="
-                            if(confirm('Отклонить заявку?')) {
-                                fetch('/toggle-app/{{ app.id }}/reject/', {
-                                    method: 'POST',
-                                    credentials: 'same-origin'
-                                }).then(r => r.json()).then(d => {
-                                    if(d.success) location.reload();
-                                    else alert(d.message);
-                                }).catch(e => alert('Ошибка'));
-                            }
-                        ">
+                    </button>
+                        <button class="btn btn-danger btn-sm" onclick="toggleAppStatus({{ app.id }}, 'reject')">
                             <i class="fas fa-times"></i> Отклонить
                         </button>
                     </div>
-                    {% endif %}
+<!--                    {% endif %}-->
                 </div>
             </div>
             {% empty %}
@@ -88,4 +68,29 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleAppStatus(appId, action) {
+    if (confirm(action === 'approve' ? 'Одобрить заявку?' : 'Отклонить заявку?')) {
+        fetch(`/toggle-app/${appId}/${action}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сервера');
+        });
+    }
+}
+</script>
 {% endblock %}

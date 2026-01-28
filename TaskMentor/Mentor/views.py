@@ -159,8 +159,9 @@ def teacher_dashboard(request):
 
 @login_required
 def toggle_application_status(request, app_id, action):
-    action in ['approve', 'reject']
-    if request.user.usertype != 'teacher':
+    if action not in ['approve', 'reject']:
+        return JsonResponse({'success': False, 'message': 'Неверное действие'})
+    if request.user.user_type != 'teacher':
         return JsonResponse({'success': False, 'message': 'Только для учителей'})
 
     app = get_object_or_404(StudentApplication, id=app_id, teacher=request.user)

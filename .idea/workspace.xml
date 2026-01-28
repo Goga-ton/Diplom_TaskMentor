@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="d13756d8-fb02-434b-bfba-8b1f2ce19e38" name="Changes" comment="commit_4">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/auth/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/auth/register.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/teacher_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/templates/core/teacher_dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/db.sqlite3" afterDir="false" />
     </list>
@@ -27,6 +25,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="f4d01cec7f1c04cec1529ac26f5ab95ca97b0102" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
