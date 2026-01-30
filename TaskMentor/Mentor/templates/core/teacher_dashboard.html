@@ -73,6 +73,149 @@
             {% endfor %}
         </div>
     </div>
+            <!-- Список учеников и создание задач -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <h3>Мои ученики <span class="badge bg-success">{{ students.count }}</span></h3>
+        {% for student_profile in students %}
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between">
+            <strong>{{ student_profile.user.firstname }} ({{ student_profile.user.email }})</strong>
+            <span class="badge bg-info">{{ student_profile.user.tasks.count }} задач</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Ник: </strong>{{ student_profile.nickname }}</p>
+            <button class="btn btn-primary btn-sm" onclick="openCreateTaskModal({{ student_profile.user.id }})">
+              Создать задачу
+            </button>
+            <!-- Список задач этого ученика -->
+            <div class="mt-3">
+              <h6>Задачи:</h6>
+              {% for task in student_profile.user.tasks.all %}
+                <div class="task-item mb-1 p-2 border rounded" data-task-id="{{ task.id }}">
+                  <strong>{{ task.title }}</strong>
+                  <span class="badge {{ task.is_completed|yesno:'bg-success,bg-warning' }}">{{ task.is_completed|yesno:'✓,⏳' }}</span>
+                  <small class="d-block">{{ task.due_date|date:"d.m.Y H:i" }}</small>
+                  <button class="btn btn-sm btn-outline-primary mt-1" onclick="openEditTaskModal({{ task.id }})">✏️</button>
+                </div>
+<!--              <small>{{ task.title }} — {{ task.due_date|date:"d.m.Y" }}-->
+<!--                {% if task.is_completed %}<span class="badge bg-success">✓</span>{% else %}<span-->
+<!--                          class="badge bg-warning">⏳</span>{% endif %}-->
+<!--              </small><br>-->
+              {% empty %}
+              <small class="text-muted">Нет задач</small>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">Нет учеников. Одобрите заявки выше.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+     <!-- Окно создания задачи -->
+<!--    <div class="mt-2">-->
+<!--      <form method="post" action="{% url 'create_task' %}" class="input-group input-group-sm mb-2">-->
+<!--        {% csrf_token %}-->
+<!--        <input type="hidden" name="student_id" value="{{ student_profile.user.id }}">-->
+<!--        <input type="text" name="title" class="form-control" placeholder="Задача..." required>-->
+<!--        <input type="datetime-local" name="due_date" class="form-control">-->
+<!--        <select name="priority" class="form-select">-->
+<!--          <option value="medium">Средний</option>-->
+<!--          <option value="high">Высокий</option>-->
+<!--        </select>-->
+<!--        <button class="btn btn-success" type="submit">Добавить</button>-->
+<!--      </form>-->
+<!--    </div>-->
+    <!-- Модалка создания задачи -->
+    <div class="modal fade" id="createTaskModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Новая задача</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="post" action="{% url 'create_task' %}" id="taskForm">
+            {% csrf_token %}
+            <div class="modal-body">
+              <input type="hidden" name="student_id" id="studentId">
+              <div class="mb-3">
+                <label class="form-label">Название</label>
+                <input type="text" class="form-control" name="title" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Описание</label>
+                <textarea class="form-control" name="description" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Дедлайн</label>
+                <input type="datetime-local" class="form-control" name="due_date" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Приоритет</label>
+                <select class="form-control" name="priority">
+                  <option value="low">Низкий</option>
+                  <option value="medium" selected>Средний</option>
+                  <option value="high">Высокий</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+              <button type="submit" class="btn btn-primary">Создать</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Модалка РЕДАКТИРОВАНИЯ -->
+<div class="modal fade" id="editTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Редактировать задачу</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'edit_task' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="hidden" name="task_id" id="editTaskId">
+          <div class="mb-3">
+            <label class="form-label">Название</label>
+            <input type="text" class="form-control" name="title" id="editTitle" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Описание</label>
+            <textarea class="form-control" name="description" id="editDescription" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Дедлайн</label>
+            <input type="datetime-local" class="form-control" name="due_date" id="editDueDate" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Приоритет</label>
+            <select class="form-control" name="priority" id="editPriority">
+              <option value="low">Низкий</option>
+              <option value="medium">Средний</option>
+              <option value="high">Высокий</option>
+            </select>
+          </div>
+<!--            ниже закоментирован блок галочки Выполнено для учителя-->
+<!--          <div class="form-check">-->
+<!--            <input class="form-check-input" type="checkbox" name="is_completed" id="editCompleted">-->
+<!--            <label class="form-check-label" for="editCompleted">Выполнено</label>-->
+<!--          </div>-->
+<!--        </div>-->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-warning">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -119,5 +262,108 @@ function approveWithPassword(appId) {
     })
     .catch(e => alert('Ошибка'));
 }
+function openCreateTaskModal(studentId) {
+  console.log('Открытие модалки для:', studentId);
+
+  const modalElement = document.getElementById('createTaskModal');
+
+  // 1. Устанавливаем ID ученика
+  document.getElementById('studentId').value = studentId;
+  document.querySelector('#createTaskModal .modal-title').textContent = `Задача для ученика ID ${studentId}`;
+
+  // 2. Удаляем старые backdrop
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  document.body.classList.remove('modal-open');
+
+  // 3. Сбрасываем возможные inline-стили
+  modalElement.style = '';
+
+  // 4. Используем нативный Bootstrap
+  const modal = new bootstrap.Modal(modalElement, {
+    backdrop: 'static',
+    keyboard: true
+  });
+
+  // 5. Показываем
+  modal.show();
+
+  // 6. После показа УБЕДИТЕЛЬНО ставим правильные стили
+  modalElement.addEventListener('shown.bs.modal', function() {
+    // Обязательные стили
+    modalElement.style.display = 'block';
+    modalElement.style.opacity = '1';
+    modalElement.style.zIndex = '1055';
+
+    // Backdrop мог не создатьcя - создаем если нет
+    if (!document.querySelector('.modal-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1050;background:rgba(0,0,0,0.5)';
+      document.body.appendChild(backdrop);
+    }
+
+    // Body класс
+    document.body.classList.add('modal-open');
+
+    // Фокус на поле
+    const input = modalElement.querySelector('input[name="title"]');
+    if (input) setTimeout(() => input.focus(), 100);
+  }, { once: true });
+}
+function openEditTaskModal(taskId) {
+  console.log('Открытие модалки редактирования для задачи:', taskId);
+
+  const modalElement = document.getElementById('editTaskModal');
+
+  // 1. ID задачи
+  document.getElementById('editTaskId').value = taskId;
+
+  // 2. Загрузка данных задачи по AJAX
+  fetch(`/get-task/${taskId}/`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('editTitle').value = data.title;
+      document.getElementById('editDescription').value = data.description || '';
+      document.getElementById('editDueDate').value = data.due_date.slice(0,16); // YYYY-MM-DDTHH:MM
+      document.getElementById('editPriority').value = data.priority;
+       // строка ниже закоментировала галочку Выполнено для учителя
+<!--      document.getElementById('editCompleted').checked = data.is_completed;-->
+      document.querySelector('#editTaskModal .modal-title').textContent = `Задача: ${data.title}`;
+
+      // 3. Удаляем старые backdrop
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+
+      // 4. Сброс стилей
+      modalElement.style = '';
+
+      // 5. Bootstrap
+      const modal = new bootstrap.Modal(modalElement, {backdrop: 'static', keyboard: true});
+      modal.show();
+
+      // 6. Принудительные стили после показа (твоя магия!)
+      modalElement.addEventListener('shown.bs.modal', function() {
+        modalElement.style.display = 'block';
+        modalElement.style.opacity = '1';
+        modalElement.style.zIndex = '1055';
+
+        if (!document.querySelector('.modal-backdrop')) {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1050;background:rgba(0,0,0,0.5)';
+          document.body.appendChild(backdrop);
+        }
+
+        document.body.classList.add('modal-open');
+        document.getElementById('editTitle').focus();
+      }, { once: true });
+    })
+    .catch(error => {
+      console.error('Ошибка загрузки задачи:', error);
+      alert('Не удалось загрузить данные задачи');
+    });
+}
+
 </script>
 {% endblock %}
+

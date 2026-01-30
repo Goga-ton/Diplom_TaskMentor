@@ -12,5 +12,8 @@ urlpatterns = [
     path('ajax-login/', views.ajax_login, name='ajax_login'),
     path('toggle-app/<int:app_id>/<str:action>/', views.toggle_application_status, name='toggle_application'),
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
+    path('create-task/', views.create_task, name='create_task'),
+    path('edit-task/', views.edit_task, name='edit_task'),
+    path('get-task/<int:task_id>/', views.get_task_data, name='get_task_data'),
     # path('update-password/<int:app_id>/', views.update_password, name='update_password')
 ]

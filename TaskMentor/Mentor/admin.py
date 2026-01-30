@@ -14,7 +14,8 @@ class StudentProfileInline(admin.StackedInline):
 @admin.register(User)
 class UserAdmin(UserAdmin):
     inlines = [TeacherProfileInline, StudentProfileInline]
-    list_display = ['email', 'username', 'first_name', 'user_type']
+    ordering = ['email']  # ✅ Принудительно после удаления из list_display('username',) без этой строки не шла миграция
+    list_display = ['email', 'first_name', 'user_type'] # удалил ('username',) не позволял сделать миграцию для обнуления 'username'
     list_filter = ['user_type']
     search_fields = ['email', 'first_name']
 

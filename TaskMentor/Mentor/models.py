@@ -39,13 +39,14 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     """Общие поля для всех пользователей"""
+    username = None
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='student')
     first_name = models.CharField('Имя*', max_length=50)
     phone = models.CharField('Телефон', max_length=20, blank=True)
     email = models.EmailField('Email адрес*', unique=True)
-    telegram = models.SlugField('Telegram ID', unique=True, blank=True)
+    # telegram = models.SlugField('Telegram ID', unique=True, blank=True)
     # перед миграцией заремить строку выше и разремить ниже и внести корректировки во views там есть описание
-    # telegram = models.SlugField('Telegram ID', unique=False, blank=True, null=True)
+    telegram = models.SlugField('Telegram ID', unique=False, blank=True, null=True)
     objects = UserManager()
 
     # Скрываем стандартные поля Django
@@ -94,6 +95,20 @@ class StudentApplication(models.Model):
     status = models.CharField(max_length=20, default='pending')  # pending-новая (по умолчанию), approved учитель зарегистрировал ученика., rejected — учитель отклонил.
     teacher_set_password = models.CharField(max_length=128, blank=True, null=True, help_text="Пароль, установленный учителем")
 
+
+class Task(models.Model):
+    PRIORITY_CHOICES = [('low', 'Низкий'), ('medium', 'Средний'), ('high', 'Высокий')]
+    title = models.CharField('Название задачи', max_length=200)
+    description = models.TextField(blank=True)
+    student = models.ForeignKey(User, on_delete=models.CASCADE,
+                                limit_choices_to={'user_type': 'student'},
+                                related_name='tasks')
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE,
+                                limit_choices_to={'user_type': 'teacher'})
+    due_date = models.DateTimeField('Срок')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 def __str__(self):
     return f"{self.first_name} ({self.get_user_type_display()})"

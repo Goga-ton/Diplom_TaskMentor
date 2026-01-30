@@ -8,4 +8,17 @@
     <p>Привет, {{ profile.nickname }}!</p>
     <p>Твой учитель: {{ teacher.first_name }}</p>
 </div>
+<h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>
+{% for task in tasks %}
+<div class="card mb-2">
+    <div class="card-body">
+        <h6>{{ task.title }}</h6>
+        <p>{{ task.description|truncatewords:20 }}</p>
+        <small>Срок: {{ task.due_date|date:"d.m.Y H:i" }}</small>
+        {% if not task.is_completed %}
+        <button class="btn btn-sm btn-success mt-2" onclick="completeTask({{ task.id }})">Выполнено</button>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
 
-from .models import StudentApplication, StudentProfile, User
+from .models import StudentApplication, StudentProfile, User, Task
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
@@ -149,11 +149,13 @@ def teacher_dashboard(request):
 
     applications = StudentApplication.objects.filter(
         teacher=request.user,
-        status='pending'
+        status='pending' #показывает заявки только с этим статусом
     ).order_by('-created_at')
-
+    students = StudentProfile.objects.filter(
+        teacher=request.user)
     return render(request, 'core/teacher_dashboard.html', {
-        'applications': applications
+        'applications': applications,
+        'students': students
     })
 
 @login_required
@@ -187,17 +189,17 @@ def toggle_application_status(request, app_id, action):
             return JsonResponse({'success': False, 'message': 'Ученик уже существует'})
 
         # ✅ Фикс telegram UNIQUE (временное решение чтобы не делать миграцию, как будет делать минрацию ремим строку ниже возвращаем (telegram=app.telegram or '',) в student
-        telegram_candidate = app.telegram.strip() if app.telegram and app.telegram.strip() else ''
-        if telegram_candidate and User.objects.filter(telegram=telegram_candidate).exists():
-            telegram_candidate = ''  # fallback на пустую строку
+        # telegram_candidate = app.telegram.strip() if app.telegram and app.telegram.strip() else ''
+        # if telegram_candidate and User.objects.filter(telegram=telegram_candidate).exists():
+        #     telegram_candidate = ''  # fallback на пустую строку
 
         # Создаём User (студент)
         student = User.objects.create_user(
-            username=f"user_{app_id}",
+            # username=f"user_{app_id}",
             email=app.email,
             first_name=app.first_name,
             phone=app.phone or '',
-            telegram=telegram_candidate,
+            telegram=app.telegram or '', #telegram=telegram_candidate,
             user_type='student',
             password=student_password  # Хешируется автоматически
         )
@@ -222,3 +224,66 @@ def toggle_application_status(request, app_id, action):
 
     # app.save()
     return JsonResponse({'success': True, 'message': message})
+
+
+@login_required
+def create_task(request):
+    if request.user.user_type != 'teacher':
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        if not student_id:
+            messages.error(request, 'Укажите ученика')
+            return redirect('teacher_dashboard')
+
+        student = get_object_or_404(User, id=student_id, user_type='student')
+        Task.objects.create(
+            title=request.POST['title'],
+            description=request.POST.get('description', ''),
+            student=student,
+            teacher=request.user,
+            due_date=request.POST['due_date'],
+            priority=request.POST['priority'],
+            is_completed=False
+        )
+        messages.success(request, f'Задача "{request.POST["title"]}" создана для {student.first_name}!')
+    return redirect('teacher_dashboard')
+
+
+@login_required
+def edit_task(request):
+    if request.user.user_type != 'teacher':
+        return HttpResponseForbidden()
+
+    if request.method == 'POST':
+        task_id = request.POST.get('task_id')
+        task = get_object_or_404(Task, id=task_id, teacher=request.user)
+
+        task.title = request.POST['title']
+        task.description = request.POST.get('description', '')
+        task.due_date = request.POST['due_date']
+        task.priority = request.POST['priority']
+        # task.is_completed = request.POST.get('is_completed') == 'on' # это убирарает галочку Выполнено для учителя
+        task.save()
+
+        messages.success(request, f'Задача "{task.title}" обновлена!')
+
+    return redirect('teacher_dashboard')
+
+
+@login_required
+def get_task_data(request, task_id):
+    if request.user.user_type != 'teacher':
+        return JsonResponse({'error': 'Доступ запрещён'}, status=403)
+
+    try:
+        task = get_object_or_404(Task, id=task_id, teacher=request.user)
+        return JsonResponse({
+            'title': task.title,
+            'description': task.description,
+            'due_date': task.due_date.isoformat() if task.due_date else '',
+            'priority': task.priority,
+            'is_completed': task.is_completed
+        })
+    except Exception as e:
+        return JsonResponse({'error': 'Задача не найдена'}, status=404)
