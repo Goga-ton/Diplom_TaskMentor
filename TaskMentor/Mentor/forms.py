@@ -2,9 +2,10 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
 
-from .models import TeacherProfile, StudentProfile
+from .models import TeacherProfile, StudentProfile, MoodEntry
 
 User = get_user_model()
+
 
 class BaseRegistrationForm(forms.ModelForm):
     password1 = forms.CharField(
@@ -84,29 +85,6 @@ class TeacherRegistrationForm(BaseRegistrationForm):
             )
         return user
 
-    # Блок для регистрации студента еще пригодиться для Учителя
-# class StudentRegistrationForm(BaseRegistrationForm):
-#     nickname = forms.CharField(
-#         label='Псевдоним',
-#         widget=forms.TextInput(attrs={'class': 'form-control'})
-#     )
-#     teacher = forms.ModelChoiceField(
-#         label='Ваш наставник',
-#         queryset=User.objects.filter(user_type='teacher'),
-#         widget=forms.Select(attrs={'class': 'form-control'})
-#     )
-
-    # def save(self, commit=True):
-    #     user = super().save(commit=False)
-    #     user.user_type = 'student'
-    #     if commit:
-    #         user.save()
-    #         StudentProfile.objects.create(
-    #             user=user,
-    #             nickname=self.cleaned_data['nickname'],
-    #             teacher=self.cleaned_data['teacher'],
-    #         )
-    #     return user
 
 class StudentApplicationForm(forms.Form):
     first_name = forms.CharField(label='Имя', max_length=30, required=True)
@@ -124,9 +102,6 @@ class StudentApplicationForm(forms.Form):
         return teacher_email
 
 
-
-
-
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(
         label='Email',
@@ -137,3 +112,12 @@ class EmailAuthenticationForm(AuthenticationForm):
         strip=False,
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
     )
+
+
+class MoodEntryForm(forms.ModelForm):
+    class Meta:
+        model = MoodEntry
+        fields = ("mood",)
+        widgets = {
+            "mood": forms.Select(attrs={"class": "form-select"}),
+        }

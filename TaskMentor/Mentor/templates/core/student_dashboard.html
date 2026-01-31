@@ -9,28 +9,52 @@
 
   <!-- ➕ НОВЫЙ блок задач -->
   <div class="row mt-4">
-        <div class="task-view-switch">
-          <form method="get" class="mb-3">
-            <label for="viewSelect" class="form-label">Сортировка</label>
-            <select id="viewSelect" name="view" class="form-select" onchange="this.form.submit()">
-              <option value="recommended" {% if view_mode == "recommended" %}selected{% endif %}>
-                По умолчанию (Рекомендуется)
-              </option>
-              <option value="date" {% if view_mode == "date" %}selected{% endif %}>
-                По дате
-              </option>
-              <option value="priority" {% if view_mode == "priority" %}selected{% endif %}>
-                По приоритету
-              </option>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Самочувствие сегодня</h5>
+
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="mood">
+          {{ mood_form.mood }}
+          <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
+        </form>
+      </div>
+    </div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">Прогресс</h5>
+    <p class="mb-1">{{ progress_percent }}% ({{ completed_tasks }} из {{ total_tasks }})</p>
+    <div class="progress">
+      <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%;"></div>
+    </div>
+  </div>
+</div>
+
+
+    <div class="task-view-switch">
+      <form method="get" class="mb-3">
+        <label for="viewSelect" class="form-label">Сортировка</label>
+        <select id="viewSelect" name="view" class="form-select" onchange="this.form.submit()">
+          <option value="recommended" {% if view_mode == "recommended" %}selected{% endif %}>
+            По умолчанию (Рекомендуется)
+          </option>
+          <option value="date" {% if view_mode == "date" %}selected{% endif %}>
+            По дате
+          </option>
+          <option value="priority" {% if view_mode == "priority" %}selected{% endif %}>
+            По приоритету
+          </option>
 <!--              <option value="hot" {% if viewmode == "hot" %}selected{% endif %}>-->
 <!--                Hot-->
 <!--              </option>-->
-              <option value="24hours" {% if view_mode == "24hours" %}selected{% endif %}>
-                Ближайшие 24 часа
-              </option>
-            </select>
-          </form>
-        </div>
+          <option value="24hours" {% if view_mode == "24hours" %}selected{% endif %}>
+            Ближайшие 24 часа
+          </option>
+        </select>
+      </form>
+    </div>
     <div class="col-12">
       <h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>
       {% for task in tasks %}

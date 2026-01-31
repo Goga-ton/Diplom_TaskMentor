@@ -14,14 +14,15 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.db.models import Case, When, Value, IntegerField, FloatField, ExpressionWrapper
-from datetime import timedelta
+from datetime import timedelta, date
 import math
 
-from .models import StudentApplication, StudentProfile, User, Task
+from .models import StudentApplication, StudentProfile, User, Task, MoodEntry
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
     EmailAuthenticationForm,
+    MoodEntryForm,
     # StudentRegistrationForm,
 )
 
@@ -73,25 +74,6 @@ def student_application(request):
         'form': form,
         'title': 'Отправить заявку на регистрацию'
     })
-
-# Блок регистрации ученика
-# @csrf_protect
-# def student_register(request):
-#     if request.method == 'POST':
-#         form = StudentRegistrationForm(request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             user.backend = 'django.contrib.auth.backends.ModelBackend'
-#             login(request, user)
-#             login(request, user)
-#             return redirect('student_dashboard')
-#     else:
-#         form = StudentRegistrationForm()
-#     return render(request, 'core/auth/register.html', {
-#         'form': form,
-#         'role': 'student',
-#         'title': 'Регистрация ученика',
-#     })
 
 @csrf_protect
 def user_login(request):
@@ -177,6 +159,7 @@ def teacher_dashboard(request):
         'now': timezone.now()
     })
 
+
 @login_required
 def student_dashboard(request):
     if request.user.user_type != 'student':
@@ -245,12 +228,39 @@ def student_dashboard(request):
     # tasks = list(overdue_qs) + upcoming_tasks
     # tasks = Task.objects.filter(student=request.user).order_by('due_date') #старый код
 
+    # --- Этап 3: самочувствие сегодня ---
+    today = timezone.localdate()
+
+    mood_entry, _ = MoodEntry.objects.get_or_create(
+        student=request.user,
+        date=today,
+        defaults={"mood": "good"},
+    )
+
+    if request.method == "POST" and request.POST.get("form") == "mood":
+        mood_form = MoodEntryForm(request.POST, instance=mood_entry)
+        if mood_form.is_valid():
+            mood_form.save()
+            return redirect("student_dashboard")
+    else:
+        mood_form = MoodEntryForm(instance=mood_entry)
+
+    # --- Этап 3: прогресс (процент выполненных задач) ---
+    total_tasks = Task.objects.filter(student=request.user).count()
+    completed_tasks = Task.objects.filter(student=request.user, is_completed=True).count()
+    progress_percent = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+
     return render(request, 'core/student_dashboard.html', {
         'profile': profile,
         'teacher': profile.teacher,
         'tasks': tasks,  # ➕ Передача задач
         'now': now,
         'view_mode': view_mode,
+        "mood_form": mood_form,
+        "mood_entry": mood_entry,
+        "progress_percent": progress_percent,
+        "completed_tasks": completed_tasks,
+        "total_tasks": total_tasks,
     })
 
 @login_required

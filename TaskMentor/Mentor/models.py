@@ -3,6 +3,9 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 USER_TYPE_CHOICES = [
     ('teacher', 'Учитель (Коуч/Психолог)'),
@@ -54,6 +57,10 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email' # но основной логин = email (не до конца понимаю нах. эта строка - разобраться если не забуду)
     REQUIRED_FIELDS = [] # - это строка добавляет поля в суперюзера, если все заработает снести эту строку
 
+    def __str__(self):
+        return f"{self.first_name} ({self.get_user_type_display()})"
+
+
 class TeacherProfile(models.Model):
     """Профиль учителя"""
     user = models.OneToOneField(User, on_delete=models.CASCADE,
@@ -65,6 +72,7 @@ class TeacherProfile(models.Model):
     class Meta:
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
+
 
 class StudentProfile(models.Model):
     """Профиль ученика"""
@@ -110,8 +118,35 @@ class Task(models.Model):
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-def __str__(self):
-    return f"{self.first_name} ({self.get_user_type_display()})"
+    def __str__(self):
+        return f"{self.title} -> {self.student.first_name}"
+
+class MoodEntry(models.Model): #модель настроения
+    MOOD_CHOICES = [
+        ("great", "Отлично"),
+        ("good", "Хорошо"),
+        ("bad", "Плохо"),
+    ]
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        limit_choices_to={"usertype": "student"},
+        related_name="mood_entries",
+    )
+    date = models.DateField()  # локальная дата ученика/сервера
+    mood = models.CharField(max_length=10, choices=MOOD_CHOICES)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("student", "date")
+        ordering = ("-date",)
+
+    def __str__(self):
+        return f"{self.student.email} {self.date} {self.mood}"
+
 
     # class Meta: # это код из урока стр.26 п 5.1
     #     verbose_name = 'Пользователь'
