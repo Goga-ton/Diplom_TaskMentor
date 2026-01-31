@@ -10,11 +10,26 @@
   <!-- ➕ НОВЫЙ блок задач -->
   <div class="row mt-4">
         <div class="task-view-switch">
-          <a href="?view=recommended" {% if view_mode == "recommended" %}style="font-weight:700"{% endif %}>Recommended</a>
-          <a href="?view=hot" {% if view_mode == "hot" %}style="font-weight:700"{% endif %}>Hot</a>
-          <a href="?view=date" {% if view_mode == "date" %}style="font-weight:700"{% endif %}>По дате</a>
-          <a href="?view=priority" {% if view_mode == "priority" %}style="font-weight:700"{% endif %}>По приоритету</a>
-          <a href="?view=24hours" {% if view_mode == "24hours" %}style="font-weight:700"{% endif %}>24 часа</a>
+          <form method="get" class="mb-3">
+            <label for="viewSelect" class="form-label">Сортировка</label>
+            <select id="viewSelect" name="view" class="form-select" onchange="this.form.submit()">
+              <option value="recommended" {% if view_mode == "recommended" %}selected{% endif %}>
+                По умолчанию (Рекомендуется)
+              </option>
+              <option value="date" {% if view_mode == "date" %}selected{% endif %}>
+                По дате
+              </option>
+              <option value="priority" {% if view_mode == "priority" %}selected{% endif %}>
+                По приоритету
+              </option>
+<!--              <option value="hot" {% if viewmode == "hot" %}selected{% endif %}>-->
+<!--                Hot-->
+<!--              </option>-->
+              <option value="24hours" {% if view_mode == "24hours" %}selected{% endif %}>
+                Ближайшие 24 часа
+              </option>
+            </select>
+          </form>
         </div>
     <div class="col-12">
       <h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>

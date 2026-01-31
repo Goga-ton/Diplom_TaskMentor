@@ -234,8 +234,8 @@ def student_dashboard(request):
     elif view_mode == 'priority':
         upcoming_tasks.sort(key=lambda t: (-t.priority_weight, t.due_date))
         # tasks = list(overdue_qs) + upcoming_tasks
-    elif view_mode == 'hot':
-        upcoming_tasks.sort(key=lambda t: (-t.urgency, -t.priority_weight, t.due_date))
+    # elif view_mode == 'hot': # ХЗ вообще зачем нужен
+    #     upcoming_tasks.sort(key=lambda t: (-t.urgency, -t.priority_weight, t.due_date))
     else:
         # recommended (как сейчас)
         upcoming_tasks.sort(key=lambda t: t.urgency, reverse=True)
