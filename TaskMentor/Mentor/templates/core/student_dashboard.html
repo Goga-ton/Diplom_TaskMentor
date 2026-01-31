@@ -1,24 +1,101 @@
 {% extends 'core/base.html' %}
-
-{% block title %}Личный кабинет ученика{% endblock %}
+{% block title %}ЛК ученика{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="container mt-5">
-    <h1>Личный кабинет ученика</h1>
-    <p>Привет, {{ profile.nickname }}!</p>
-    <p>Твой учитель: {{ teacher.first_name }}</p>
-</div>
-<h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>
-{% for task in tasks %}
-<div class="card mb-2">
-    <div class="card-body">
-        <h6>{{ task.title }}</h6>
-        <p>{{ task.description|truncatewords:20 }}</p>
-        <small>Срок: {{ task.due_date|date:"d.m.Y H:i" }}</small>
-        {% if not task.is_completed %}
-        <button class="btn btn-sm btn-success mt-2" onclick="completeTask({{ task.id }})">Выполнено</button>
-        {% endif %}
+  <h1>Привет, {{ profile.nickname }}!</h1>
+  <p>Учитель: {{ teacher.firstname }}</p>
+
+  <!-- ➕ НОВЫЙ блок задач -->
+  <div class="row mt-4">
+        <div class="task-view-switch">
+          <a href="?view=recommended" {% if view_mode == "recommended" %}style="font-weight:700"{% endif %}>Recommended</a>
+          <a href="?view=hot" {% if view_mode == "hot" %}style="font-weight:700"{% endif %}>Hot</a>
+          <a href="?view=date" {% if view_mode == "date" %}style="font-weight:700"{% endif %}>По дате</a>
+          <a href="?view=priority" {% if view_mode == "priority" %}style="font-weight:700"{% endif %}>По приоритету</a>
+          <a href="?view=24hours" {% if view_mode == "24hours" %}style="font-weight:700"{% endif %}>24 часа</a>
+        </div>
+    <div class="col-12">
+      <h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>
+      {% for task in tasks %}
+      <div class="card mb-2">
+        <div class="card-body">
+          <h6 class="card-title">{{ task.title }}</h6>
+          <p class="card-text">{{ task.description|truncatewords:20|default:"—" }}</p>
+
+           <small class="text-muted d-block">
+            debug: priority_weight={{ task.priority_weight }},
+            days_left_ceil={{ task.days_left_ceil|default:"-" }},
+            urgency={{ task.urgency|default:"-" }}
+            </small>
+
+          <div class="d-flex justify-content-between">
+             <small class="d-block text-muted">
+                        Приоритет:
+                        {% if task.priority == 'high' %}
+                          <span class="badge bg-danger">Высокий</span>
+                        {% elif task.priority == 'medium' %}
+                          <span class="badge bg-warning text-dark">Средний</span>
+                        {% else %}
+                          <span class="badge bg-secondary">Низкий</span>
+                        {% endif %}
+                      </small>
+            <small class="text-muted">
+              {% if task.due_date > now %}
+                📅 {{ task.due_date|date:"d.m.Y H:i" }}
+              {% else %}
+                ⏰ Просрочено: {{ task.due_date|date:"d.m.Y H:i" }}
+              {% endif %}
+            </small>
+            <span class="badge {{ task.is_completed|yesno:'bg-success,bg-danger' }}">
+              {{ task.is_completed|yesno:'Выполнено,В работе' }}
+            </span>
+          </div>
+          {% if not task.is_completed %}
+          <button class="btn btn-sm btn-success mt-2" onclick="completeTask({{ task.id }})">
+            ✅ Отметить выполненной
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="alert alert-info">
+        <i class="fas fa-tasks"></i> У вас пока нет задач
+      </div>
+      {% endfor %}
     </div>
+  </div>
 </div>
-{% endfor %}
+
+
+<script>
+function completeTask(taskId) {
+  if (!confirm('Отметить задачу выполненной?')) return;
+
+  fetch(`/complete-task/${taskId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Без релоада — обновляем UI
+      const taskCard = document.querySelector(`[onclick="completeTask(${taskId})"]`).closest('.card');
+      taskCard.innerHTML = taskCard.innerHTML.replace('В работе', 'Выполнено')
+                                            .replace('btn-success', 'btn-secondary disabled')
+                                            .replace('completeTask(', 'return; //');
+      alert(data.message);
+    } else {
+      alert('Ошибка: ' + (data.error || 'Неизвестно'));
+    }
+  })
+  .catch(error => {
+    console.error('Ошибка:', error);
+    alert('Ошибка сети');
+  });
+}
+</script>
 {% endblock %}

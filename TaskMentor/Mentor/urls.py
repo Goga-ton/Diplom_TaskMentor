@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import TaskDeleteView
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -15,5 +16,7 @@ urlpatterns = [
     path('create-task/', views.create_task, name='create_task'),
     path('edit-task/', views.edit_task, name='edit_task'),
     path('get-task/<int:task_id>/', views.get_task_data, name='get_task_data'),
+    path('complete-task/<int:task_id>/', views.complete_task, name='complete_task'),
+    path('api/task/<int:task_id>/delete/', TaskDeleteView.as_view(), name='task_delete'),
     # path('update-password/<int:app_id>/', views.update_password, name='update_password')
 ]

@@ -1,0 +1,271 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Личный кабинет учителя - TaskMentor{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Личный кабинет учителя</h1>
+            <div class="card">
+                <div class="card-header">
+                    <strong>Профиль</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Имя:</strong> {{ user.first_name }}</p>
+                    <p><strong>Телефон:</strong> {{ user.phone }}</p>
+                    <p><strong>Telegram:</strong> {{ user.telegram|default:"Не указан" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
+            {% for app in applications %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ app.email }}</strong> - {{ app.nickname }}
+                        <span class="badge bg-warning ms-2">{{ app.status.title }}</span>
+                    </div>
+                    <small class="text-muted">{{ app.created_at|date:"d.M.Y H:i" }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Имя:</strong> {{ app.first_name }}</p>
+                            <p><strong>Телефон:</strong> {{ app.phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Telegram:</strong> {{ app.telegram|default:"Не указан" }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label for="password{{ app.id }}" class="form-label">
+                            Пароль ученика:</label>
+                        <input type="password" class="form-control form-control-sm"
+                               id="password{{ app.id }}" placeholder="Придумайте пароль для ученика">
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-success btn-sm me-2" onclick="approveWithPassword({{ app.id }})">
+                            <i class="fas fa-check"></i> Одобрить
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="toggleAppStatus({{ app.id }}, 'reject')">
+                            <i class="fas fa-times"></i> Отклонить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                <h4>Заявок нет</h4>
+                <p>Заявки учеников будут появляться здесь автоматически.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Список учеников и создание задач -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3>Мои ученики <span class="badge bg-success">{{ students.count }}</span></h3>
+                        <!-- Фильтр общий -->
+            <form method="GET" class="mb-3">
+                <select name="filter" onchange="this.form.submit()" class="form-select form-select-sm w-auto">
+                    <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>Показать не выполненные</option>
+                    <option value="all" {% if filter_status == 'all' %}selected{% endif %}>Показать все</option>
+                </select>
+            </form>
+            {% for student_profile in students %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between">
+                    <strong>{{ student_profile.user.first_name }} ({{ student_profile.user.email }})</strong>
+                    <span class="badge bg-info">{{ student_profile.tasks_list|length }} задач</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Ник: </strong>{{ student_profile.nickname }}</p>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateTaskModal({{ student_profile.user.id }})">
+                        Создать задачу
+                    </button>
+                                        <!-- Список задач этого ученика -->
+                    <div class="mt-3">
+                        <h6>Задачи:</h6>
+                        {% for task in student_profile.tasks_list %}
+                        <div class="task-item mb-1 p-2 border rounded" data-task-id="{{ task.id }}">
+                            <strong>{{ task.title }}</strong>
+                            <span class="badge {{ task.is_completed|yesno:'bg-success,bg-warning' }}">{{ task.is_completed|yesno:"✓,⏳" }}</span>
+                            <small class="d-block">{{ task.due_date|date:"d.m.Y H:i" }}</small>
+                            <div class="mt-1">
+                                {% if not task.is_completed %}
+                                <button class="btn btn-danger btn-sm me-1" onclick="deleteTask({{ task.id }})" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-primary" onclick="openEditTaskModal({{ task.id }})">✏️</button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <small class="text-muted">Нет задач</small>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">Нет учеников. Одобрите заявки выше.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Модалка создания задачи -->
+    <div class="modal fade" id="createTaskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новая задача</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'create_task' %}" id="taskForm">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <input type="hidden" name="student_id" id="studentId">
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Дедлайн</label>
+                            <input type="datetime-local" class="form-control" name="due_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Приоритет</label>
+                            <select class="form-control" name="priority">
+                                <option value="low">Низкий</option>
+                                <option value="medium" selected>Средний</option>
+                                <option value="high">Высокий</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка РЕДАКТИРОВАНИЯ -->
+<div class="modal fade" id="editTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать задачу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'edit_task' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="task_id" id="editTaskId">
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" name="title" id="editTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" id="editDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дедлайн</label>
+                        <input type="datetime-local" class="form-control" name="due_date" id="editDueDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Приоритет</label>
+                        <select class="form-control" name="priority" id="editPriority">
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAppStatus(appId, action) {
+    if (confirm(action === 'approve' ? 'Одобрить заявку?' : 'Отклонить заявку?')) {
+        fetch(`/toggle-app/${appId}/${action}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сервера');
+        });
+    }
+}
+
+function approveWithPassword(appId) {  // Убрали второй параметр 'approve'
+    const password = document.getElementById('password' + appId).value;
+    if (!password) {
+        alert('Введите пароль для ученика');
+        return;
+    }
+    fetch(`/toggle-app/${appId}/approve/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Student-Password': password
+        },
+        credentials: 'same-origin'
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) location.reload();
+        else alert(d.message);
+    })
+    .catch(e => alert('Ошибка'));
+}
+
+// Остальные функции остаются без изменений
+function openCreateTaskModal(studentId) {
+    // ... существующий код ...
+}
+
+function openEditTaskModal(taskId) {
+    // ... существующий код ...
+}
+
+function deleteTask(taskId) {
+    // ... существующий код ...
+}
+
+function getCookie(name) {
+    // ... существующий код ...
+}
+</script>
+{% endblock %}
