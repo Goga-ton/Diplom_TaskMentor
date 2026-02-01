@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, TeacherProfile, StudentProfile
+from .models import User, TeacherProfile, StudentProfile, WebPushSubscription
 
 class TeacherProfileInline(admin.StackedInline):
     model = TeacherProfile
@@ -27,3 +27,8 @@ class TeacherProfileAdmin(admin.ModelAdmin):
 class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'nickname', 'teacher']
     list_filter = ['teacher']
+
+@admin.register(WebPushSubscription)
+class WebPushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ['user', 'endpoint', 'created_at']
+    list_filter = ['created_at']

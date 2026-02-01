@@ -24,6 +24,11 @@
     </div>
 </div>
 
+<div style="position:fixed; bottom:20px; right:20px; z-index:9999; background:rgba(0,0,0,0.8); padding:10px; border-radius:10px;">
+    <button onclick="subscribeUserToPush()" class="btn btn-primary btn-sm me-1">📱 Подписка</button>
+    <button onclick="testPushFromIndex()" class="btn btn-success btn-sm">🔔 Тест</button>
+</div>
+
 <!-- Модальное окно идентификации -->
 <div id="authModal" class="modal">
     <div class="modal-content">
@@ -127,6 +132,14 @@ function goToRegister() {
     } else {
         window.location.href = '/student/application/';
     }
+}
+
+async function testPushFromIndex() {
+console.log('🧪 Тест из index...');
+try {
+    const resp = await fetch('/test-notification/', {method: 'POST'});
+    console.log('✅', await resp.json());
+} catch(e) { console.error('❌', e); }
 }
 </script>
 {% endblock %}

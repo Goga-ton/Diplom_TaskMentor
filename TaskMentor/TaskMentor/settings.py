@@ -135,16 +135,37 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 LOGIN_REDIRECT_URL = 'teacher_dashboard'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = 'login'
+
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": "BBtVuh-UVFUCS-JuucvVx_87eHN4H9l8nA_CVl7BlYid9xMYfSBaOWy_jEwFL8TfOp8bVOJUjAkFAWhzL8MMMuA=",  # получи на шаге 3
+    "VAPID_PRIVATE_KEY": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZQQLM9o0_gYiQnsIhMlGs7Mvdgeh5zT3pi5AT65KggKhRANCAARV29R9_-HEW2RbLKN0x-wAc6PCLyr5b-bcs4_DxIjbVkfoqHSy0zhoTAi9JhGAM8AkA0QAQOirR4O3Dce9NZad",
+    "VAPID_ADMIN_EMAIL": "mailto:admin@taskmentor.ru"
+}
+# Celery (Redis брокер)
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Планировщик
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+INSTALLED_APPS += [
+    'webpush',
+    'celery',
+    'django_celery_beat',
+]
 
 # Данный код блокирует авторегистрацию Google
 SOCIALACCOUNT_AUTO_SIGNUP = False  # авто-регистрация # ← КРИТИЧНО: блокирует авто-регистрацию при значениее = False
@@ -159,3 +180,18 @@ SOCIALACCOUNT_AUTO_SIGNUP = False  # авто-регистрация # ← КР�
 #         'SCOPE': ['profile', 'email'],
 #     }
 # }
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'openid',
+            'email',
+            'profile',
+            'https://www.googleapis.com/auth/calendar',  # Новый scope для Calendar
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline',
+            'prompt': 'consent',
+        },
+    },
+}

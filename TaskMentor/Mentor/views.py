@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 import json
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
@@ -16,10 +16,12 @@ from django.utils import timezone
 from django.db.models import Case, When, Value, IntegerField, FloatField, ExpressionWrapper, Count, Q
 from django.db.models.functions import TruncDay
 from datetime import timedelta, date
+from django.conf import settings
 import math
 from collections import defaultdict
+from pywebpush import webpush, WebPushException
 
-from .models import StudentApplication, StudentProfile, User, Task, MoodEntry
+from .models import StudentApplication, StudentProfile, User, Task, MoodEntry, WebPushSubscription
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
@@ -28,11 +30,12 @@ from .forms import (
     # StudentRegistrationForm,
 )
 
+
 User = get_user_model()
 
 @csrf_protect
 def index(request):
-    return render(request, 'core/index.html')
+    return render(request, 'core/index.html',{'WEBPUSH_SETTINGS': settings.WEBPUSH_SETTINGS})
 
 @csrf_protect
 def teacher_register(request):
@@ -489,3 +492,68 @@ class TaskDeleteView(LoginRequiredMixin, View):
 
         task.delete()
         return JsonResponse({'success': True, 'message': 'Задача удалена.'})
+
+
+@csrf_exempt
+@require_POST
+def subscribe_push(request):
+    try:
+        # Парсим JSON из тела запроса
+        body = json.loads(request.body)
+        endpoint = body['endpoint']
+        keys = body['keys']
+
+        print(f"Подписка: {endpoint[:50]}...")  # debug
+
+        WebPushSubscription.objects.update_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={
+                'p256dh': keys['p256dh'],
+                'auth': keys['auth'],
+            }
+        )
+        return JsonResponse({'status': 'ok'})
+
+    except Exception as e:
+        print(f"Subscribe error: {e}")  # debug
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def test_notification(request):
+    for sub in request.user.push_subscriptions.all():
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                },
+                data=json.dumps({  # ← json.dumps!
+                    "title": "🔔 TaskMentor",
+                    "body": "Тест push!"
+                }),
+                vapid_private_key=settings.WEBPUSH_SETTINGS["VAPID_PRIVATE_KEY"],
+                vapid_claims={"sub": settings.WEBPUSH_SETTINGS["VAPID_ADMIN_EMAIL"]}
+            )
+        except Exception as ex:
+            print(f"Push error: {ex}")
+    return JsonResponse({'status': 'sent'})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def save_push_subscription(request):
+    try:
+        sub_data = json.loads(request.body)
+        WebPushSubscription.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'endpoint': sub_data['endpoint'],
+                'p256dh': sub_data['keys']['p256dh'],
+                'auth': sub_data['keys']['auth']
+            }
+        )
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

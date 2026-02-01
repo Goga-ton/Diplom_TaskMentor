@@ -147,6 +147,37 @@ class MoodEntry(models.Model): #модель настроения
     def __str__(self):
         return f"{self.student.email} {self.date} {self.mood}"
 
+class WebPushSubscription(models.Model):
+    """Подписка браузера на уведомления"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions'
+    )
+    p256dh = models.TextField()  # Публичный ключ клиента
+    auth = models.TextField()  # Auth токен клиента
+    endpoint = models.URLField(max_length=500)  # URL браузера для push
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'endpoint')  # один браузер на пользователя
+
+    def __str__(self):
+        return f"{self.user.email} → {self.endpoint[:50]}..."
+
+class GoogleCalendarToken(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'usertype': 'teacher'})
+    access_token = models.CharField(max_length=300)
+    refresh_token = models.CharField(max_length=300)
+    token_expiry = models.DateTimeField()
+    calendar_id = models.CharField(max_length=200, default='primary')  # 'primary' или custom
+
+    def refresh_access_token(self):
+        # Логика refresh (ниже в utils)
+        pass
+
+    def __str__(self):
+        return f"Calendar tokens for {self.user.email}"
 
     # class Meta: # это код из урока стр.26 п 5.1
     #     verbose_name = 'Пользователь'
