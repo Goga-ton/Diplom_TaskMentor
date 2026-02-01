@@ -87,6 +87,30 @@
             <span class="badge bg-info">{{ student_profile.user.tasks.count }} задач</span>
           </div>
           <div class="card-body">
+
+            <!-- Прогресс -->
+            <div class="mb-3">
+              <small>Прогресс: {{ student_profile.progress }}% ({{ student_profile.completed_tasks }}/
+                  {{ student_profile.total_tasks }})</small>
+              <div class="progress">
+                <div class="progress-bar" style="width: {{ student_profile.progress }}%;"></div>
+              </div>
+            </div>
+            <!-- Последние настроения -->
+            <div class="mb-2">
+              <small>Настроение (последние 7 дней):</small>
+              {% for mood in student_profile.recent_moods %}
+                <span class="badge
+                  {% if mood.mood == 'great' %}bg-success
+                  {% elif mood.mood == 'good' %}bg-warning
+                  {% else %}bg-danger{% endif %} me-1">
+                  {{ mood.get_mood_display }} {{ mood.date|date:"d.m" }}
+                </span>
+              {% empty %}
+                <span class="badge bg-secondary">нет данных</span>
+              {% endfor %}
+            </div>
+            <!-- --------------------- -->
             <p><strong>Ник: </strong>{{ student_profile.nickname }}</p>
             <button class="btn btn-primary btn-sm" onclick="openCreateTaskModal({{ student_profile.user.id }})">
               Создать задачу

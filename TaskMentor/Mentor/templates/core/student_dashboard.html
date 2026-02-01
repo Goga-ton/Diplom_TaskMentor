@@ -12,7 +12,6 @@
     <div class="card mb-3">
       <div class="card-body">
         <h5 class="card-title">Самочувствие сегодня</h5>
-
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="form" value="mood">
@@ -22,16 +21,31 @@
       </div>
     </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <h5 class="card-title">Прогресс</h5>
-    <p class="mb-1">{{ progress_percent }}% ({{ completed_tasks }} из {{ total_tasks }})</p>
-    <div class="progress">
-      <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%;"></div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Прогресс</h5>
+        <p class="mb-1">{{ progress_percent }}% ({{ completed_tasks }} из {{ total_tasks }})</p>
+        <div class="progress">
+          <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%;">
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
+    <!-- График настроения -->
+    <div class="card mb-3">
+      <div class="card-header">Настроение (30 дней)</div>
+      <div class="card-body">
+        <canvas id="moodChart" height="100"></canvas>
+      </div>
+    </div>
+    <!-- График задач -->
+    <div class="card mb-3">
+      <div class="card-header">Задачи по дням</div>
+      <div class="card-body">
+        <canvas id="taskChart" height="100"></canvas>
+      </div>
+    </div>
 
     <div class="task-view-switch">
       <form method="get" class="mb-3">
@@ -46,9 +60,9 @@
           <option value="priority" {% if view_mode == "priority" %}selected{% endif %}>
             По приоритету
           </option>
-<!--              <option value="hot" {% if viewmode == "hot" %}selected{% endif %}>-->
-<!--                Hot-->
-<!--              </option>-->
+  <!--              <option value="hot" {% if viewmode == "hot" %}selected{% endif %}>-->
+  <!--                Hot-->
+  <!--              </option>-->
           <option value="24hours" {% if view_mode == "24hours" %}selected{% endif %}>
             Ближайшие 24 часа
           </option>
@@ -62,24 +76,23 @@
         <div class="card-body">
           <h6 class="card-title">{{ task.title }}</h6>
           <p class="card-text">{{ task.description|truncatewords:20|default:"—" }}</p>
-
-           <small class="text-muted d-block">
+          <small class="text-muted d-block">
             debug: priority_weight={{ task.priority_weight }},
             days_left_ceil={{ task.days_left_ceil|default:"-" }},
             urgency={{ task.urgency|default:"-" }}
-            </small>
+          </small>
 
           <div class="d-flex justify-content-between">
-             <small class="d-block text-muted">
-                        Приоритет:
-                        {% if task.priority == 'high' %}
-                          <span class="badge bg-danger">Высокий</span>
-                        {% elif task.priority == 'medium' %}
-                          <span class="badge bg-warning text-dark">Средний</span>
-                        {% else %}
-                          <span class="badge bg-secondary">Низкий</span>
-                        {% endif %}
-                      </small>
+            <small class="d-block text-muted">
+              Приоритет:
+              {% if task.priority == 'high' %}
+                <span class="badge bg-danger">Высокий</span>
+              {% elif task.priority == 'medium' %}
+                <span class="badge bg-warning text-dark">Средний</span>
+              {% else %}
+                <span class="badge bg-secondary">Низкий</span>
+              {% endif %}
+            </small>
             <small class="text-muted">
               {% if task.due_date > now %}
                 📅 {{ task.due_date|date:"d.m.Y H:i" }}
@@ -107,6 +120,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 function completeTask(taskId) {
@@ -136,5 +150,62 @@ function completeTask(taskId) {
     alert('Ошибка сети');
   });
 }
+
+  // Данные из Python
+  const moodDataRaw = {{ mood_data|safe }};
+  const taskData = {{ task_data|safe }};
+
+  // НАСТРОЕНИЕ: сортируем по дате + слова вместо цифр
+  const moodEntries = Object.entries(moodDataRaw);
+  moodEntries.sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  const moodLabels = moodEntries.map(entry => entry[0]);
+  const moodValues = moodEntries.map(entry => entry[1]);
+
+  const ctxMood = document.getElementById('moodChart').getContext('2d');
+  new Chart(ctxMood, {
+    type: 'line',
+    data: {
+      labels: moodLabels,
+      datasets: [{
+        label: 'Настроение',
+        data: moodValues,
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          min: 0, max: 3,
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              if (value === 3) return 'Отлично';
+              if (value === 2) return 'Хорошо';
+              if (value === 1) return 'Плохо';
+              return '';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ЗАДАЧИ (уже работает правильно)
+  const taskLabels = Object.keys(taskData);
+  const taskCreated = taskLabels.map(day => taskData[day]?.created || 0);
+  const taskCompleted = taskLabels.map(day => taskData[day]?.completed || 0);
+
+  const ctxTask = document.getElementById('taskChart').getContext('2d');
+  new Chart(ctxTask, {
+    type: 'bar',
+    data: {
+      labels: taskLabels,
+      datasets: [
+        { label: 'Создано', data: taskCreated, backgroundColor: 'rgba(54, 162, 235, 0.5)' },
+        { label: 'Выполнено', data: taskCompleted, backgroundColor: 'rgba(75, 192, 192, 0.5)' }
+      ]
+    }
+  });
 </script>
 {% endblock %}

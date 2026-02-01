@@ -13,9 +13,11 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
-from django.db.models import Case, When, Value, IntegerField, FloatField, ExpressionWrapper
+from django.db.models import Case, When, Value, IntegerField, FloatField, ExpressionWrapper, Count, Q
+from django.db.models.functions import TruncDay
 from datetime import timedelta, date
 import math
+from collections import defaultdict
 
 from .models import StudentApplication, StudentProfile, User, Task, MoodEntry
 from .forms import (
@@ -149,11 +151,51 @@ def teacher_dashboard(request):
         teacher=request.user,
         status='pending' #показывает заявки только с этим статусом
     ).order_by('-created_at')
-    students = StudentProfile.objects.filter(
-        teacher=request.user)
+    student_profiles = StudentProfile.objects.filter(teacher=request.user).select_related('user')
+    # students = StudentProfile.objects.filter(teacher=request.user) # старая строка взамен той которая выше
+
+    # === АНАЛИТИКА УЧИТЕЛЯ ===
+    # students_with_stats = []
+    # for student_profile in students:
+    #     student = student_profile.user
+    students_with_stats = []
+    for profile in student_profiles:
+        student = profile.user
+
+        # Прогресс задач
+        total_tasks = Task.objects.filter(student=student).count()
+        completed_tasks = Task.objects.filter(student=student, is_completed=True).count()
+        progress = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+
+        # Настроение за 7 дней
+        recent_moods = MoodEntry.objects.filter(
+            student=student, date__gte=timezone.now().date() - timedelta(days=7)
+        ).order_by("-date")[:7]
+
+        # Получаем задачи студента для отображения
+        student_tasks = all_tasks.filter(student=student)
+        if filter_status == 'pending':
+            student_tasks = student_tasks.filter(is_completed=False)
+
+
+        students_with_stats.append({
+            "user": student,  # Основной пользователь
+            "profile": profile,  # StudentProfile
+            "progress": progress,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "recent_moods": recent_moods,
+            "tasks": student_tasks,  # Задачи студента с учетом фильтра
+            # "profile": student_profile,
+            # "progress": progress,
+            # "total_tasks": total_tasks,
+            # "completed_tasks": completed_tasks,
+            # "recent_moods": recent_moods,
+        })
+
     return render(request, 'core/teacher_dashboard.html', {
         'applications': applications,
-        'students': students,
+        'students': students_with_stats,
         'tasks': tasks,  # Передаём отфильтрованные задачи
         'filter_status': filter_status,  # Для шаблона
         'now': timezone.now()
@@ -250,6 +292,35 @@ def student_dashboard(request):
     completed_tasks = Task.objects.filter(student=request.user, is_completed=True).count()
     progress_percent = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
 
+    # --- Графики: настроение за 30 дней ---
+    moods_30days = MoodEntry.objects.filter(
+        student=request.user,
+        date__gte=timezone.now().date() - timedelta(days=30)
+    ).values("date").annotate(count=Count("mood")).order_by("date")
+
+    # Преобразуем в словарь {дата: mood_value}
+    mood_data = {}
+    for entry in MoodEntry.objects.filter(student=request.user, date__gte=timezone.now().date() - timedelta(days=30)):
+        mood_map = {"great": 3, "good": 2, "bad": 1}
+        mood_data[entry.date.strftime("%Y-%m-%d")] = mood_map[entry.mood]
+
+    # --- Графики: задачи по дням за 30 дней ---
+    tasks_by_day = Task.objects.filter(
+        student=request.user,
+        created_at__gte=timezone.now() - timedelta(days=30)
+    ).annotate(day=TruncDay("created_at")).values("day").annotate(
+        created=Count("id", filter=Q(is_completed=False)),
+        completed=Count("id", filter=Q(is_completed=True))
+    )
+
+    task_data = {}
+    for item in tasks_by_day:
+        day_str = item["day"].strftime("%Y-%m-%d")
+        task_data[day_str] = {
+            "created": item["created"],
+            "completed": item["completed"]
+        }
+
     return render(request, 'core/student_dashboard.html', {
         'profile': profile,
         'teacher': profile.teacher,
@@ -261,6 +332,8 @@ def student_dashboard(request):
         "progress_percent": progress_percent,
         "completed_tasks": completed_tasks,
         "total_tasks": total_tasks,
+        "mood_data": mood_data,
+        "task_data": task_data,
     })
 
 @login_required
