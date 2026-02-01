@@ -20,8 +20,10 @@ from django.conf import settings
 import math
 from collections import defaultdict
 from pywebpush import webpush, WebPushException
+from .utils.google_calendar import sync_task_to_calendar
 
-from .models import StudentApplication, StudentProfile, User, Task, MoodEntry, WebPushSubscription
+
+from .models import StudentApplication, StudentProfile, User, Task, MoodEntry, WebPushSubscription, GoogleCalendarToken
 from .forms import (
     TeacherRegistrationForm,
     StudentApplicationForm,
@@ -406,7 +408,8 @@ def create_task(request):
             return redirect('teacher_dashboard')
 
         student = get_object_or_404(User, id=student_id, user_type='student')
-        Task.objects.create(
+
+        task = Task.objects.create( #длбавели в начало  task =
             title=request.POST['title'],
             description=request.POST.get('description', ''),
             student=student,
@@ -415,6 +418,32 @@ def create_task(request):
             priority=request.POST['priority'],
             is_completed=False
         )
+        # Для тестирвоания Гугл календаря
+        print(f"🔍 DEBUG: user={request.user.email}, teacherprofile={hasattr(request.user, 'teacherprofile')}")
+        print(f"🔍 DEBUG: sync_calendar={request.POST.get('sync_calendar')}")
+
+        # ✅ Проверяем наличие профиля teacher И sync_calendar
+        if (request.POST.get('sync_calendar') == 'on' and
+                request.user.user_type == 'teacher' and  # По реальному полю модели
+                GoogleCalendarToken.objects.filter(user=request.user).exists()):  # Token есть?
+
+            print("🔍 SYNC: starting calendar sync...")
+            try:
+                from .utils.google_calendar import sync_task_to_calendar
+                result = sync_task_to_calendar(request.user, task)
+                print(f"🔍 SYNC: success, event_id={getattr(result, 'id', 'unknown')}")
+            except Exception as e:
+                print(f"🔍 SYNC ERROR: {e}")
+
+        # if (hasattr(request.user, 'teacherprofile') and
+        #         request.POST.get('sync_calendar') == 'on'):
+        #     try:
+        #         from .utils.google_calendar import sync_task_to_calendar
+        #         sync_task_to_calendar(request.user, task)
+        #     except Exception as e:
+        #         # Не ломает создание task, логируем ошибку
+        #         print(f"Calendar sync error: {e}")
+
         messages.success(request, f'Задача "{request.POST["title"]}" создана для {student.first_name}!')
     return redirect('teacher_dashboard')
 

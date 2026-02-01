@@ -22,6 +22,12 @@
     </div>
 
     <div class="row mt-4">
+       <!-- Отображения синхронизации с Гугл-->
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="sync_calendar" id="syncCalendar">
+          <label class="form-check-label" for="syncCalendar">Синхронизировать с Google Calendar</label>
+        </div>
+        <!-- -------------------------- -->
         <div class="col-12">
             <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
             {% for app in applications %}
@@ -208,6 +214,17 @@
                   <option value="high">Высокий</option>
                 </select>
               </div>
+            <!-- ✅ НОВЫЙ checkbox для Calendar sync (строка после priority) -->
+              <div class="form-check mb-3 mt-3">
+                <input class="form-check-input" type="checkbox" name="sync_calendar" id="syncCalendar" checked>
+                <label class="form-check-label" for="syncCalendar">
+                📅 Синхронизировать с Google Calendar (если настроен)
+                </label>
+                <div class="form-text small">
+                  Создаст событие в твоём Google календаре
+                </div>
+              </div>
+            <!-- ------------------------------------ -->
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -251,6 +268,16 @@
               <option value="high">Высокий</option>
             </select>
           </div>
+
+        <!-- ✅ Gogglе календарь в редактирвоании -->
+          <div class="form-check mb-3 mt-3">
+            <input class="form-check-input" type="checkbox" name="sync_calendar" id="editSyncCalendar">
+            <label class="form-check-label" for="editSyncCalendar">
+              📅 Синхронизировать с Google Calendar
+            </label>
+          </div>
+           <!-- ---------------------------------- -->
+               <!-- ✅ Тот же checkbox для edit -->
 <!--            ниже закоментирован блок галочки Выполнено для учителя-->
 <!--          <div class="form-check">-->
 <!--            <input class="form-check-input" type="checkbox" name="is_completed" id="editCompleted">-->
@@ -374,6 +401,7 @@ function openEditTaskModal(taskId) {
       document.getElementById('editDescription').value = data.description || '';
       document.getElementById('editDueDate').value = data.due_date.slice(0,16); // YYYY-MM-DDTHH:MM
       document.getElementById('editPriority').value = data.priority;
+      document.getElementById('editSyncCalendar').checked = false;  // По умолчанию off для edit google календарь
        // строка ниже закоментировала галочку Выполнено для учителя
 <!--      document.getElementById('editCompleted').checked = data.is_completed;-->
       document.querySelector('#editTaskModal .modal-title').textContent = `Задача: ${data.title}`;
