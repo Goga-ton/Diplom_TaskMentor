@@ -1,52 +1,69 @@
-from django.db.models.signals import post_save
 from django.dispatch import receiver
-from allauth.socialaccount.signals import pre_social_login
-from django.contrib.auth import login
-from django.http import HttpResponseRedirect
-from .models import User, GoogleCalendarToken
-from datetime import datetime, timedelta, timezone
-from allauth.socialaccount.signals import social_account_added
+from allauth.socialaccount.signals import pre_social_login, social_account_added
+from .models import GoogleCalendarToken
+from django.utils import timezone
+from datetime import timedelta
 
 
-@receiver(pre_social_login)
-def link_google_account(sender, request, sociallogin, **kwargs):
-    email = sociallogin.account.extra_data['email']
-    try:
-        user = User.objects.get(email=email)
-        # Логиним существующего пользователя
-        sociallogin.connect(request, user)
-        login(request, user)
-        # Редирект по роли
-        if user.user_type == 'teacher':
-            return HttpResponseRedirect('/teacher/dashboard/')
-        else:
-            return HttpResponseRedirect('/student/dashboard/')
-    except User.objects.ModelMultipleResults:
-        # Несколько пользователей с email — ошибка
-        sociallogin.state['process'] = 'connect'
-    except User.DoesNotExist:
-        # Нет аккаунта — редирект на регистрацию
-        pass
-
+# @receiver(pre_social_login)
+# def save_token_on_login(sender, request, sociallogin, **kwargs):
+#     if sociallogin.account.provider == 'google':
+#         print(f"🔍 SAVE_TOKEN: Google login detected")
+#
+#         if hasattr(sociallogin, 'token') and hasattr(sociallogin.token, 'token'):
+#             token_value = sociallogin.token.token
+#             refresh_value = getattr(sociallogin.token, 'refresh_token', '')
+#             print(
+#                 f"🔍 SAVE_TOKEN: Token: {token_value[:30]}..., Refresh: {refresh_value[:30] if refresh_value else 'None'}...")
+#
+#             # Сохраняем в сессию
+#             request.session['google_calendar_token'] = token_value
+#             request.session['google_refresh_token'] = refresh_value
+#             request.session['google_token_saved'] = True
+#             print(f"🔍 SAVE_TOKEN: Tokens saved to session")
 
 @receiver(social_account_added)
-def save_google_token(sender, socialaccount, **kwargs):
-    user = socialaccount.user
-    print(f"🚨 ADDED: provider={socialaccount.provider}, user={user.email}")
+def save_real_google_token(sender, request, sociallogin=None, **kwargs):
+    """
+      Сохраняем OAuth-токены Google в GoogleCalendarToken
+      после успешного подключения Google-аккаунта.
+    """
+    if sociallogin is None or sociallogin.account.provider.lower() != "google":
+        return
 
-    if (socialaccount.provider == 'google' and
-            user.usertype == 'teacher'):
+    user = sociallogin.user
+    if getattr(user, "user_type", None) != "teacher":
+        return
 
-        # Token из socialaccount
-        token = socialaccount.tokens.first()
-        if token:
-            print(f"🚨 TOKEN: {token.token[:20]}")
-            GoogleCalendarToken.objects.update_or_create(
-                user=user,
-                defaults={
-                    'access_token': token.token,
-                    'refresh_token': getattr(token, 'refresh_token', token.token),
-                    'token_expiry': timezone.now() + timedelta(hours=1),
-                }
-            )
-            print("🚨 TOKEN SAVED!")
+    # Токен обычно лежит в sociallogin.token (а refresh — в token_secret)
+    token = getattr(sociallogin, "token", None)
+    if not token or not getattr(token, "token", None):
+        return
+
+    access_token = token.token
+    refresh_token = getattr(token, "token_secret", "") or ""
+
+    GoogleCalendarToken.objects.update_or_create(
+        user=user,
+        defaults={
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_expiry": timezone.now() + timedelta(hours=1),
+            "calendar_id": "primary",
+        },
+    )
+
+# # Получаем actual signal объекты
+# from allauth.socialaccount.signals import pre_social_login, social_account_added
+#
+# # Проверяем сколько receivers зарегистрировано
+# pre_receivers = len(pre_social_login.receivers) if hasattr(pre_social_login, 'receivers') else 0
+# add_receivers = len(social_account_added.receivers) if hasattr(social_account_added, 'receivers') else 0
+#
+# print(f"🔥 DEBUG: pre_social_login receivers count: {pre_receivers}")
+# print(f"🔥 DEBUG: social_account_added receivers count: {add_receivers}")
+#
+# # Выводим сами receivers (первые 3)
+# if hasattr(pre_social_login, 'receivers'):
+#     for i, receiver in enumerate(pre_social_login.receivers[:3]):
+#         print(f"🔥 DEBUG: pre_social_login receiver {i}: {receiver}")

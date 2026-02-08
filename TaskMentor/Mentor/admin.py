@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, TeacherProfile, StudentProfile, WebPushSubscription
+from .models import User, TeacherProfile, StudentProfile, WebPushSubscription, GoogleCalendarToken
 
 class TeacherProfileInline(admin.StackedInline):
     model = TeacherProfile
@@ -32,3 +32,10 @@ class StudentProfileAdmin(admin.ModelAdmin):
 class WebPushSubscriptionAdmin(admin.ModelAdmin):
     list_display = ['user', 'endpoint', 'created_at']
     list_filter = ['created_at']
+
+@admin.register(GoogleCalendarToken)
+class GoogleCalendarTokenAdmin(admin.ModelAdmin):
+    list_display = ['user', 'calendar_id', 'token_expiry']
+    list_filter = ['token_expiry']
+    search_fields = ['user__email']
+    readonly_fields = ['access_token', 'refresh_token', 'token_expiry', 'calendar_id']  # Токены только для чтения

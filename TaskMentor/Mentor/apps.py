@@ -6,5 +6,8 @@ class MentorConfig(AppConfig):
     name = 'Mentor'
 
     def ready(self):
-        # import Mentor.signals
-        pass
+        try:
+            import Mentor.signals
+            print("🔥 Mentor.signals LOADED!")  # тест
+        except ImportError as e:
+            print(f"❌ Signals error: {e}")

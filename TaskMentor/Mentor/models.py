@@ -132,7 +132,7 @@ class MoodEntry(models.Model): #модель настроения
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        limit_choices_to={"usertype": "student"},
+        limit_choices_to={"user_type": "student"},
         related_name="mood_entries",
     )
     date = models.DateField()  # локальная дата ученика/сервера
@@ -167,15 +167,19 @@ class WebPushSubscription(models.Model):
         return f"{self.user.email} → {self.endpoint[:50]}..."
 
 class GoogleCalendarToken(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'usertype': 'teacher'})
-    access_token = models.CharField(max_length=300)
-    refresh_token = models.CharField(max_length=300)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'teacher'})
+    access_token = models.CharField(max_length=500)
+    refresh_token = models.CharField(max_length=500, blank=True)
     token_expiry = models.DateTimeField()
     calendar_id = models.CharField(max_length=200, default='primary')  # 'primary' или custom
 
-    def refresh_access_token(self):
+    def refresh_access_token(self): # заглушка, d gthcgtrnbdt lолжен обновлять истёкший access_token с помощью refresh_token через Google OAuth API.
         # Логика refresh (ниже в utils)
         pass
+
+    def is_expired(self): #проверяtт, не истёк ли токен (token_expiry).
+        from django.utils import timezone
+        return timezone.now() >= self.token_expiry
 
     def __str__(self):
         return f"Calendar tokens for {self.user.email}"

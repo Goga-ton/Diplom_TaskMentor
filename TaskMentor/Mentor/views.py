@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.contrib.auth.decorators import login_required
@@ -8,32 +8,25 @@ import json
 from django.views.decorators.http import require_http_methods, require_POST
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.hashers import make_password
-from django.utils.decorators import method_decorator
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
-from django.db.models import Case, When, Value, IntegerField, FloatField, ExpressionWrapper, Count, Q
+from django.db.models import Case, When, Value, IntegerField, Count, Q
 from django.db.models.functions import TruncDay
-from datetime import timedelta, date
+from datetime import timedelta
 from django.conf import settings
 import math
-from collections import defaultdict
-from pywebpush import webpush, WebPushException
-from .utils.google_calendar import sync_task_to_calendar
+from pywebpush import webpush
+from .utils.google_calendar import sync_task_to_calendar, remove_task_from_calendar
+
+from .models import (StudentApplication, StudentProfile,
+                     User, Task, MoodEntry, WebPushSubscription,
+                     GoogleCalendarToken)
+from .forms import (TeacherRegistrationForm, StudentApplicationForm,
+                    EmailAuthenticationForm, MoodEntryForm)
 
 
-from .models import StudentApplication, StudentProfile, User, Task, MoodEntry, WebPushSubscription, GoogleCalendarToken
-from .forms import (
-    TeacherRegistrationForm,
-    StudentApplicationForm,
-    EmailAuthenticationForm,
-    MoodEntryForm,
-    # StudentRegistrationForm,
-)
-
-
-User = get_user_model()
 
 @csrf_protect
 def index(request):
@@ -141,15 +134,48 @@ def user_logout(request):
 def teacher_dashboard(request):
     if request.user.user_type != 'teacher':  # Проверка роли
         return redirect('index')
+
+        # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
+    from allauth.socialaccount.models import SocialAccount
+    social = SocialAccount.objects.filter(user=request.user, provider__iexact='google').first()
+
+    token = None
+    refresh_token = ''
+
+    if social:
+        token_obj = social.socialtoken_set.first()
+        if token_obj:
+            token = token_obj.token
+            # ✅ В allauth refresh_token обычно лежит в token_secret
+            refresh_token = getattr(token_obj, 'token_secret', '') or ''
+
+    # Проверяем сессию как запасной вариант
+    if (not token or token == 'dummy_access_token') and request.session.get('google_token_saved'):
+        token = request.session.get('google_calendar_token')
+        refresh_token = request.session.get('google_refresh_token', '')
+        # Очищаем сессию после использования
+        request.session.pop('google_calendar_token', None)
+        request.session.pop('google_refresh_token', None)
+        request.session.pop('google_token_saved', None)
+
+    if token and token != 'dummy_access_token':
+        GoogleCalendarToken.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'access_token': token,
+                'refresh_token': refresh_token,
+                'token_expiry': timezone.now() + timedelta(hours=1),
+            }
+        )
+
     # ФИЛЬТР ЗАДАЧ (новое!)
     filter_status = request.GET.get('filter', 'pending')
-    # students = StudentProfile.objects.filter(teacher=request.user)
     # Базовый queryset всех задач учителя
     all_tasks = Task.objects.filter(teacher=request.user)
 
     if filter_status == 'pending':
         tasks = all_tasks.filter(is_completed=False)  # Только не выполненные (по умолчанию)
-    else:  # 'all'
+    else:
         tasks = all_tasks  # Все задачи
 
     applications = StudentApplication.objects.filter(
@@ -160,9 +186,6 @@ def teacher_dashboard(request):
     # students = StudentProfile.objects.filter(teacher=request.user) # старая строка взамен той которая выше
 
     # === АНАЛИТИКА УЧИТЕЛЯ ===
-    # students_with_stats = []
-    # for student_profile in students:
-    #     student = student_profile.user
     students_with_stats = []
     for profile in student_profiles:
         student = profile.user
@@ -191,19 +214,17 @@ def teacher_dashboard(request):
             "completed_tasks": completed_tasks,
             "recent_moods": recent_moods,
             "tasks": student_tasks,  # Задачи студента с учетом фильтра
-            # "profile": student_profile,
-            # "progress": progress,
-            # "total_tasks": total_tasks,
-            # "completed_tasks": completed_tasks,
-            # "recent_moods": recent_moods,
         })
+
+    has_calendar_token = GoogleCalendarToken.objects.filter(user=request.user).exists()
 
     return render(request, 'core/teacher_dashboard.html', {
         'applications': applications,
         'students': students_with_stats,
         'tasks': tasks,  # Передаём отфильтрованные задачи
         'filter_status': filter_status,  # Для шаблона
-        'now': timezone.now()
+        'now': timezone.now(),
+        'has_calendar_token': has_calendar_token,
     })
 
 
@@ -257,7 +278,6 @@ def student_dashboard(request):
         t.days_left_ceil = days_left_ceil
         t.urgency = t.priority_weight / (days_left_ceil + 1)
 
-    # upcoming_tasks.sort(key=lambda t: t.urgency, reverse=True)
     if view_mode == 'date':
         # Просроченные всё равно сверху, но внутри upcoming — по due_date (ближайшие сначала)
         upcoming_tasks.sort(key=lambda t: t.due_date)
@@ -360,11 +380,6 @@ def toggle_application_status(request, app_id, action):
         if User.objects.filter(email=app.email).exists():
             return JsonResponse({'success': False, 'message': 'Ученик уже существует'})
 
-        # ✅ Фикс telegram UNIQUE (временное решение чтобы не делать миграцию, как будет делать минрацию ремим строку ниже возвращаем (telegram=app.telegram or '',) в student
-        # telegram_candidate = app.telegram.strip() if app.telegram and app.telegram.strip() else ''
-        # if telegram_candidate and User.objects.filter(telegram=telegram_candidate).exists():
-        #     telegram_candidate = ''  # fallback на пустую строку
-
         # Создаём User (студент)
         student = User.objects.create_user(
             # username=f"user_{app_id}",
@@ -392,7 +407,7 @@ def toggle_application_status(request, app_id, action):
         app.status = 'rejected'
         message = 'Заявка отклонена'
     else:
-        return JsonResponse({'success': False, 'message': 'Неверное действие'})
+        return JsonResponse({'success': False, 'message': 'Неверное действие'}) # Эта проверка никогда не сработает
 
     # app.save()
     return JsonResponse({'success': True, 'message': message})
@@ -409,40 +424,36 @@ def create_task(request):
 
         student = get_object_or_404(User, id=student_id, user_type='student')
 
-        task = Task.objects.create( #длбавели в начало  task =
+        due_str = request.POST.get("due_date")  # 'YYYY-MM-DDTHH:MM'
+        due_dt = parse_datetime(due_str)  # может вернуть None в некоторых случаях
+        if due_dt is None:
+            # запасной вариант
+            due_dt = timezone.datetime.fromisoformat(due_str)
+        if timezone.is_naive(due_dt):
+            due_dt = timezone.make_aware(due_dt, timezone.get_current_timezone())
+
+        task = Task.objects.create( # Сохраняем задачу в переменную для синхронизации с календарем
             title=request.POST['title'],
             description=request.POST.get('description', ''),
             student=student,
             teacher=request.user,
-            due_date=request.POST['due_date'],
+            due_date=due_dt, #request.POST['due_date'],
             priority=request.POST['priority'],
             is_completed=False
         )
-        # Для тестирвоания Гугл календаря
-        print(f"🔍 DEBUG: user={request.user.email}, teacherprofile={hasattr(request.user, 'teacherprofile')}")
-        print(f"🔍 DEBUG: sync_calendar={request.POST.get('sync_calendar')}")
 
-        # ✅ Проверяем наличие профиля teacher И sync_calendar
-        if (request.POST.get('sync_calendar') == 'on' and
-                request.user.user_type == 'teacher' and  # По реальному полю модели
-                GoogleCalendarToken.objects.filter(user=request.user).exists()):  # Token есть?
+        # ✅ Синхронизация с Google Calendar (если включено)
+        should_sync = (
+                request.POST.get("sync_calendar") == "on"
+                and request.user.user_type == "teacher"
+                and GoogleCalendarToken.objects.filter(user=request.user).exists()
+        )
 
-            print("🔍 SYNC: starting calendar sync...")
+        if should_sync:
             try:
-                from .utils.google_calendar import sync_task_to_calendar
-                result = sync_task_to_calendar(request.user, task)
-                print(f"🔍 SYNC: success, event_id={getattr(result, 'id', 'unknown')}")
-            except Exception as e:
-                print(f"🔍 SYNC ERROR: {e}")
-
-        # if (hasattr(request.user, 'teacherprofile') and
-        #         request.POST.get('sync_calendar') == 'on'):
-        #     try:
-        #         from .utils.google_calendar import sync_task_to_calendar
-        #         sync_task_to_calendar(request.user, task)
-        #     except Exception as e:
-        #         # Не ломает создание task, логируем ошибку
-        #         print(f"Calendar sync error: {e}")
+                sync_task_to_calendar(request.user, task)
+            except Exception:
+                pass
 
         messages.success(request, f'Задача "{request.POST["title"]}" создана для {student.first_name}!')
     return redirect('teacher_dashboard')
@@ -458,10 +469,24 @@ def edit_task(request):
 
         task.title = request.POST['title']
         task.description = request.POST.get('description', '')
-        task.due_date = request.POST['due_date']
         task.priority = request.POST['priority']
         # task.is_completed = request.POST.get('is_completed') == 'on' # это убирарает галочку Выполнено для учителя
+
+        due_str = request.POST.get('due_date')
+        due_dt = parse_datetime(due_str) or timezone.datetime.fromisoformat(due_str)
+        if timezone.is_naive(due_dt):
+            due_dt = timezone.make_aware(due_dt, timezone.get_current_timezone())
+        task.due_date = due_dt
+
         task.save()
+        # ✅ Синхронизация с Google Calendar при редактировании
+        if (request.POST.get('sync_calendar') == 'on'
+                and request.user.user_type == 'teacher'
+                and GoogleCalendarToken.objects.filter(user=request.user).exists()):
+            try:
+                sync_task_to_calendar(request.user, task)  # update если есть event_id, иначе create
+            except Exception:
+                pass
 
         messages.success(request, f'Задача "{task.title}" обновлена!')
 
@@ -499,16 +524,6 @@ def complete_task(request, task_id):
         'task_id': task_id
     })
 
-# class TaskDeleteView(View):
-#     @method_decorator(require_http_methods(["POST"]))
-#     @method_decorator(login_required)
-#     def post(self, request, task_id):
-#         task = get_object_or_404(Task, id=task_id, teacher=request.user.teacherprofile)
-#         if task.is_completed:
-#             return JsonResponse({'error': 'Можно удалять только не выполненные задачи.'}, status=400)
-#         task.delete()  # ЖЁСТКОЕ удаление
-#         return JsonResponse({'success': True, 'message': 'Задача удалена.'})
-
 
 class TaskDeleteView(LoginRequiredMixin, View):
     def post(self, request, task_id):
@@ -518,6 +533,14 @@ class TaskDeleteView(LoginRequiredMixin, View):
         task = get_object_or_404(Task, id=task_id, teacher=request.user)
         if task.is_completed:
             return JsonResponse({'error': 'Можно удалять только не выполненные задачи.'}, status=400)
+
+        # ✅ Если у задачи было событие — удаляем его из календаря
+        if (task.calendar_event_id
+                and GoogleCalendarToken.objects.filter(user=request.user).exists()):
+            try:
+                remove_task_from_calendar(request.user, task)
+            except Exception:
+                pass
 
         task.delete()
         return JsonResponse({'success': True, 'message': 'Задача удалена.'})
@@ -532,8 +555,6 @@ def subscribe_push(request):
         endpoint = body['endpoint']
         keys = body['keys']
 
-        print(f"Подписка: {endpoint[:50]}...")  # debug
-
         WebPushSubscription.objects.update_or_create(
             user=request.user,
             endpoint=endpoint,
@@ -545,7 +566,6 @@ def subscribe_push(request):
         return JsonResponse({'status': 'ok'})
 
     except Exception as e:
-        print(f"Subscribe error: {e}")  # debug
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
@@ -565,8 +585,8 @@ def test_notification(request):
                 vapid_private_key=settings.WEBPUSH_SETTINGS["VAPID_PRIVATE_KEY"],
                 vapid_claims={"sub": settings.WEBPUSH_SETTINGS["VAPID_ADMIN_EMAIL"]}
             )
-        except Exception as ex:
-            print(f"Push error: {ex}")
+        except Exception:
+            pass
     return JsonResponse({'status': 'sent'})
 
 @csrf_exempt

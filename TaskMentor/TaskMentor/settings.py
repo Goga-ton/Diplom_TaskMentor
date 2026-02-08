@@ -14,7 +14,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True # Локальный запуск False для Продакшина
+DEBUG_CALENDAR_SYNC = False
 
 ALLOWED_HOSTS = []
 
@@ -29,19 +30,20 @@ AUTHENTICATION_BACKENDS = [
 # Sites framework
 SITE_ID = 1
 
-# Email как USERNAME_FIELD
-# ACCOUNT_AUTHENTICATION_METHOD = 'email' # по рекомендации perplexity
-ACCOUNT_LOGIN_METHODS = {'email'} # замена верхней строки по рекомендации seepseek
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*'] # вместо ACCOUNT_EMAIL_REQUIRED и ACCOUNT_USERNAME_REQUIRED
-# ACCOUNT_EMAIL_REQUIRED = True # по рекомендации perplexity (строку можно удалить а можно оставить для совместивости рекомендации deepseek)
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # mandatory для продакшена
-# ACCOUNT_USERNAME_REQUIRED = False # по рекомендации perplexity (строку можно удалить а можно оставить для совместивости рекомендации deepseek)
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Allauth настройки
+ACCOUNT_AUTHENTICATION_METHOD = 'email'      # Используем email для входа
+ACCOUNT_EMAIL_REQUIRED = True                # Email обязателен
+ACCOUNT_USERNAME_REQUIRED = False            # Не используем username
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None     # Указываем, что username нет ← ОСТАВЛЯЕМ
+ACCOUNT_EMAIL_VERIFICATION = 'none'          # 'mandatory' для продакшена
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 # Социальный логин
-SOCIALACCOUNT_QUERY_EMAIL = True
-SOCIALACCOUNT_STORE_TOKENS = True
-
+SOCIALACCOUNT_QUERY_EMAIL = True # Запрашивать email у социального провайдера (Google). Без этого может не получить email пользователя.
+SOCIALACCOUNT_STORE_TOKENS = True # Важно для токенов календаря. Сохранять OAuth токены в базу данных. Без этого Allauth не сохранит access_token и refresh_token.
+SOCIALACCOUNT_AUTO_SIGNUP = False  # Автоматически создавать пользователя при первом входе через соцсеть. Если False - потребуется дополнительная регистрация после OAuth.
+SOCIALACCOUNT_EMAIL_REQUIRED = True #Email обязателен для социальных аккаунтов. Если у провайдера нет email - вход будет отклонен.
+SOCIALACCOUNT_ADAPTER = 'Mentor.adapters.CustomSocialAccountAdapter'
 # Application definition
 
 INSTALLED_APPS = [
@@ -140,15 +142,15 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles' # создает каталог staticfiles для Продакшена
 
 LOGIN_REDIRECT_URL = 'teacher_dashboard'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = 'login'
 
 WEBPUSH_SETTINGS = {
-    "VAPID_PUBLIC_KEY": "BBtVuh-UVFUCS-JuucvVx_87eHN4H9l8nA_CVl7BlYid9xMYfSBaOWy_jEwFL8TfOp8bVOJUjAkFAWhzL8MMMuA=",  # получи на шаге 3
-    "VAPID_PRIVATE_KEY": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZQQLM9o0_gYiQnsIhMlGs7Mvdgeh5zT3pi5AT65KggKhRANCAARV29R9_-HEW2RbLKN0x-wAc6PCLyr5b-bcs4_DxIjbVkfoqHSy0zhoTAi9JhGAM8AkA0QAQOirR4O3Dce9NZad",
+    "VAPID_PUBLIC_KEY": os.getenv("WEBPUSH_PUBLIC_KEY"),
+    "VAPID_PRIVATE_KEY": os.getenv("WEBPUSH_PRIVATE_KEY"),
     "VAPID_ADMIN_EMAIL": "mailto:admin@taskmentor.ru"
 }
 # Celery (Redis брокер)
@@ -167,31 +169,49 @@ INSTALLED_APPS += [
     'django_celery_beat',
 ]
 
-# Данный код блокирует авторегистрацию Google
-SOCIALACCOUNT_AUTO_SIGNUP = False  # авто-регистрация # ← КРИТИЧНО: блокирует авто-регистрацию при значениее = False
-# по рекомендации deepseek
-# SOCIALACCOUNT_PROVIDERS = {
-#     'google': {
-#         'APP': {
-#             'client_id': os.getenv('GOOGLE_CLIENT_ID'),
-#             'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-#         },
-#         'VERIFIED_EMAIL': True,
-#         'SCOPE': ['profile', 'email'],
-#     }
-# }
-
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
             'openid',
             'email',
             'profile',
-            'https://www.googleapis.com/auth/calendar',  # Новый scope для Calendar
+            'https://www.googleapis.com/auth/calendar',
         ],
         'AUTH_PARAMS': {
             'access_type': 'offline',
             'prompt': 'consent',
-        },
-    },
+        }
+    }
 }
+
+
+
+
+
+
+
+
+# SOCIALACCOUNT_PROVIDERS = {
+    # 'google': {
+    #     # APP credentials (обязательно)
+    #     'APP': {
+    #         'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+    #         'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+    #         'key': '',  # Обычно пусто
+    #     },
+    #
+    #     # Scopes (права доступа)
+    #     'SCOPE': [
+    #         'openid',  # OpenID Connect (обязательно для Allauth)
+    #         'email',  # Доступ к email
+    #         'profile',  # Доступ к профилю (имя, фото)
+    #         'https://www.googleapis.com/auth/calendar',  # Доступ к календарю
+    #     ],
+
+        # # Дополнительные параметры авторизации
+        # 'AUTH_PARAMS': {
+        #     'access_type': 'offline',  # Получить refresh_token. Без этого токен будет действовать только 1 час.
+        #     'prompt': 'consent',  # Всегда запрашивать разрешение. чтобы Google всегда показывал экран разрешений. Иначе может не запросить доступ к календарю.
+        # }
+#     }
+# }

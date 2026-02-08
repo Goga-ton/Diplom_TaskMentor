@@ -22,12 +22,32 @@
     </div>
 
     <div class="row mt-4">
-       <!-- Отображения синхронизации с Гугл-->
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" name="sync_calendar" id="syncCalendar">
-          <label class="form-check-label" for="syncCalendar">Синхронизировать с Google Calendar</label>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <strong>Google Calendar</strong>
+                </div>
+                <div class="card-body">
+                    {% if has_calendar_token %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Google Calendar подключён
+                            <small class="d-block text-muted mt-1">Задачи будут автоматически синхронизироваться</small>
+                        </div>
+                    {% else %}
+                        <p>Подключите Google Calendar для синхронизации задач</p>
+                        <a href="/accounts/google/login/" class="btn btn-primary">
+                            <i class="fab fa-google"></i> Подключить Google Calendar
+                        </a>
+                        <small class="d-block text-muted mt-2">
+                            После подключения новые задачи будут автоматически добавляться в ваш календарь
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <!-- -------------------------- -->
+    </div>
+
+    <div class="row mt-4">
         <div class="col-12">
             <h3>Заявки учеников <span class="badge bg-primary">{{ applications.count }}</span></h3>
             {% for app in applications %}
