@@ -47,8 +47,6 @@ class User(AbstractUser):
     first_name = models.CharField('Имя*', max_length=50)
     phone = models.CharField('Телефон', max_length=20, blank=True)
     email = models.EmailField('Email адрес*', unique=True)
-    # telegram = models.SlugField('Telegram ID', unique=True, blank=True)
-    # перед миграцией заремить строку выше и разремить ниже и внести корректировки во views там есть описание
     telegram = models.SlugField('Telegram ID', unique=False, blank=True, null=True)
     objects = UserManager()
 
@@ -84,7 +82,8 @@ class StudentProfile(models.Model):
 
     def clean(self):
         # Проверяем, что у ученика есть профиль учителя
-        if self.teacher.student_profile is None:
+        # if self.teacher.student_profile is None:
+        if not hasattr(self.teacher, "teacher_profile"):
             raise ValidationError('Учитель должен иметь профиль')
 
     class Meta:
@@ -117,7 +116,9 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    calendar_event_id = models.CharField(max_length=100, blank=True, null=True)
+    # calendar_event_id = models.CharField(max_length=100, blank=True, null=True)
+    teacher_calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
+    student_calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} -> {self.student.first_name}"
@@ -167,7 +168,8 @@ class WebPushSubscription(models.Model):
         return f"{self.user.email} → {self.endpoint[:50]}..."
 
 class GoogleCalendarToken(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'teacher'})
+    # user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'teacher'})
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     access_token = models.CharField(max_length=500)
     refresh_token = models.CharField(max_length=500, blank=True)
     token_expiry = models.DateTimeField()
@@ -184,6 +186,4 @@ class GoogleCalendarToken(models.Model):
     def __str__(self):
         return f"Calendar tokens for {self.user.email}"
 
-    # class Meta: # это код из урока стр.26 п 5.1
-    #     verbose_name = 'Пользователь'
-    #     verbose_name_plural = 'Пользователи'
+

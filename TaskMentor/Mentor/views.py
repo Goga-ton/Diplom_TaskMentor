@@ -18,7 +18,9 @@ from datetime import timedelta
 from django.conf import settings
 import math
 from pywebpush import webpush
-from .utils.google_calendar import sync_task_to_calendar, remove_task_from_calendar
+from .utils.google_calendar import (sync_task_for_teacher, sync_task_for_student,
+                                    remove_task_for_teacher, remove_task_for_student)
+#sync_task_to_calendar, remove_task_from_calendar
 
 from .models import (StudentApplication, StudentProfile,
                      User, Task, MoodEntry, WebPushSubscription,
@@ -135,7 +137,7 @@ def teacher_dashboard(request):
     if request.user.user_type != 'teacher':  # Проверка роли
         return redirect('index')
 
-        # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
+    #     # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
     from allauth.socialaccount.models import SocialAccount
     social = SocialAccount.objects.filter(user=request.user, provider__iexact='google').first()
 
@@ -233,6 +235,39 @@ def student_dashboard(request):
     if request.user.user_type != 'student':
         return redirect('index')
 
+        # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
+    from allauth.socialaccount.models import SocialAccount
+    social = SocialAccount.objects.filter(user=request.user, provider__iexact='google').first()
+
+    token = None
+    refresh_token = ''
+
+    if social:
+        token_obj = social.socialtoken_set.first()
+        if token_obj:
+            token = token_obj.token
+            # ✅ В allauth refresh_token обычно лежит в token_secret
+            refresh_token = getattr(token_obj, 'token_secret', '') or ''
+
+    # Проверяем сессию как запасной вариант
+    if (not token or token == 'dummy_access_token') and request.session.get('google_token_saved'):
+        token = request.session.get('google_calendar_token')
+        refresh_token = request.session.get('google_refresh_token', '')
+        # Очищаем сессию после использования
+        request.session.pop('google_calendar_token', None)
+        request.session.pop('google_refresh_token', None)
+        request.session.pop('google_token_saved', None)
+
+    if token and token != 'dummy_access_token':
+        GoogleCalendarToken.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'access_token': token,
+                'refresh_token': refresh_token,
+                'token_expiry': timezone.now() + timedelta(hours=1),
+            }
+        )
+
     view_mode = request.GET.get('view', 'recommended')
 
     profile = request.user.student_profile  # Связь из модели
@@ -283,17 +318,10 @@ def student_dashboard(request):
         upcoming_tasks.sort(key=lambda t: t.due_date)
     elif view_mode == 'priority':
         upcoming_tasks.sort(key=lambda t: (-t.priority_weight, t.due_date))
-        # tasks = list(overdue_qs) + upcoming_tasks
-    # elif view_mode == 'hot': # ХЗ вообще зачем нужен
-    #     upcoming_tasks.sort(key=lambda t: (-t.urgency, -t.priority_weight, t.due_date))
     else:
-        # recommended (как сейчас)
         upcoming_tasks.sort(key=lambda t: t.urgency, reverse=True)
 
     tasks = list(overdue_qs) + upcoming_tasks
-
-    # tasks = list(overdue_qs) + upcoming_tasks
-    # tasks = Task.objects.filter(student=request.user).order_by('due_date') #старый код
 
     # --- Этап 3: самочувствие сегодня ---
     today = timezone.localdate()
@@ -346,6 +374,8 @@ def student_dashboard(request):
             "completed": item["completed"]
         }
 
+    has_calendar_token = GoogleCalendarToken.objects.filter(user=request.user).exists()
+
     return render(request, 'core/student_dashboard.html', {
         'profile': profile,
         'teacher': profile.teacher,
@@ -359,7 +389,9 @@ def student_dashboard(request):
         "total_tasks": total_tasks,
         "mood_data": mood_data,
         "task_data": task_data,
+        "has_calendar_token": has_calendar_token,
     })
+
 
 @login_required
 def toggle_application_status(request, app_id, action):
@@ -443,15 +475,34 @@ def create_task(request):
         )
 
         # ✅ Синхронизация с Google Calendar (если включено)
-        should_sync = (
-                request.POST.get("sync_calendar") == "on"
-                and request.user.user_type == "teacher"
-                and GoogleCalendarToken.objects.filter(user=request.user).exists()
-        )
+        # should_sync = (
+        #         request.POST.get("sync_calendar") == "on"
+        #         and request.user.user_type == "teacher"
+        # )
+        #
+        # if should_sync:
+        #     if GoogleCalendarToken.objects.filter(user=request.user).exists():
+        #         try:
+        #             sync_task_to_calendar(request.user, task, "teacher_calendar_event_id")
+        #         except Exception:
+        #             pass
+        #     if GoogleCalendarToken.objects.filter(user=student).exists():
+        #         try:
+        #             sync_task_to_calendar(student, task, "student_calendar_event_id")
+        #         except Exception:
+        #             pass
 
-        if should_sync:
+        if (request.POST.get("sync_calendar") == "on"
+                and GoogleCalendarToken.objects.filter(user=request.user).exists()):
             try:
-                sync_task_to_calendar(request.user, task)
+                sync_task_for_teacher(request.user, task)
+            except Exception:
+                pass
+        # ✅ синхронизация календаря ученика — по твоей логике 1A+2A+3A:
+        # если ученик не подключил — просто молча пропускаем
+        if GoogleCalendarToken.objects.filter(user=student).exists():
+            try:
+                sync_task_for_student(student, task)
             except Exception:
                 pass
 
@@ -480,11 +531,31 @@ def edit_task(request):
 
         task.save()
         # ✅ Синхронизация с Google Calendar при редактировании
-        if (request.POST.get('sync_calendar') == 'on'
-                and request.user.user_type == 'teacher'
+        # if (request.POST.get('sync_calendar') == 'on'
+        #         and request.user.user_type == 'teacher'):
+        #     if GoogleCalendarToken.objects.filter(user=request.user).exists():
+        #         try:
+        #         # sync_task_to_calendar(request.user, task)  # update если есть event_id, иначе create
+        #             sync_task_to_calendar(request.user, task, "teacher_calendar_event_id")
+        #             # sync_task_to_calendar(task.student, task, "student_calendar_event_id")
+        #         except Exception:
+        #             pass
+        #     if GoogleCalendarToken.objects.filter(user=task.student).exists():
+        #         try:
+        #             sync_task_to_calendar(task.student, task, "student_calendar_event_id")
+        #         except Exception:
+        #             pass
+
+        if (request.POST.get("sync_calendar") == "on"
                 and GoogleCalendarToken.objects.filter(user=request.user).exists()):
             try:
-                sync_task_to_calendar(request.user, task)  # update если есть event_id, иначе create
+                sync_task_for_teacher(request.user, task)
+            except Exception:
+                pass
+
+        if GoogleCalendarToken.objects.filter(user=task.student).exists():
+            try:
+                sync_task_for_student(task.student, task)
             except Exception:
                 pass
 
@@ -535,10 +606,29 @@ class TaskDeleteView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Можно удалять только не выполненные задачи.'}, status=400)
 
         # ✅ Если у задачи было событие — удаляем его из календаря
-        if (task.calendar_event_id
-                and GoogleCalendarToken.objects.filter(user=request.user).exists()):
+        # if (task.teacher_calendar_event_id
+        #         and GoogleCalendarToken.objects.filter(user=request.user).exists()):
+        #     try:
+        #         remove_task_from_calendar(request.user, task, "teacher_calendar_event_id")
+        #     except Exception:
+        #         pass
+        # if (task.student_calendar_event_id
+        #         and GoogleCalendarToken.objects.filter(user=task.student).exists()):
+        #     try:
+        #         remove_task_from_calendar(task.student, task, "student_calendar_event_id")
+        #     except Exception:
+        #         pass
+        # удалить у учителя
+        if GoogleCalendarToken.objects.filter(user=request.user).exists():
             try:
-                remove_task_from_calendar(request.user, task)
+                remove_task_for_teacher(request.user, task)
+            except Exception:
+                pass
+
+        # удалить у ученика
+        if GoogleCalendarToken.objects.filter(user=task.student).exists():
+            try:
+                remove_task_for_student(task.student, task)
             except Exception:
                 pass
 

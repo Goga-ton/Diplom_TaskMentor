@@ -7,6 +7,25 @@
   <h1>Привет, {{ profile.nickname }}!</h1>
   <p>Учитель: {{ teacher.firstname }}</p>
 
+  <div class="card mb-3">
+    <div class="card-header"><strong>Google Calendar</strong></div>
+    <div class="card-body">
+      {% if has_calendar_token %}
+        <div class="alert alert-success mb-0">
+          Google Calendar подключён
+        </div>
+      {% else %}
+        <p>Подключите Google Calendar для синхронизации задач</p>
+        <a href="/accounts/google/login/" class="btn btn-primary">
+          Подключить Google Calendar
+        </a>
+        <small class="d-block text-muted mt-2">
+          После подключения задачи будут добавляться в ваш календарь
+        </small>
+      {% endif %}
+    </div>
+  </div>
+
   <!-- ➕ НОВЫЙ блок задач -->
   <div class="row mt-4">
     <div class="card mb-3">

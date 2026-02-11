@@ -44,6 +44,7 @@ SOCIALACCOUNT_STORE_TOKENS = True # Важно для токенов кален�
 SOCIALACCOUNT_AUTO_SIGNUP = False  # Автоматически создавать пользователя при первом входе через соцсеть. Если False - потребуется дополнительная регистрация после OAuth.
 SOCIALACCOUNT_EMAIL_REQUIRED = True #Email обязателен для социальных аккаунтов. Если у провайдера нет email - вход будет отклонен.
 SOCIALACCOUNT_ADAPTER = 'Mentor.adapters.CustomSocialAccountAdapter'
+ACCOUNT_ADAPTER = "Mentor.adapters.CustomAccountAdapter"
 # Application definition
 
 INSTALLED_APPS = [
@@ -144,7 +145,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / 'staticfiles' # создает каталог staticfiles для Продакшена
 
-LOGIN_REDIRECT_URL = 'teacher_dashboard'
+LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = 'login'
 
@@ -184,34 +185,3 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-
-
-
-
-
-
-
-# SOCIALACCOUNT_PROVIDERS = {
-    # 'google': {
-    #     # APP credentials (обязательно)
-    #     'APP': {
-    #         'client_id': os.getenv('GOOGLE_CLIENT_ID'),
-    #         'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-    #         'key': '',  # Обычно пусто
-    #     },
-    #
-    #     # Scopes (права доступа)
-    #     'SCOPE': [
-    #         'openid',  # OpenID Connect (обязательно для Allauth)
-    #         'email',  # Доступ к email
-    #         'profile',  # Доступ к профилю (имя, фото)
-    #         'https://www.googleapis.com/auth/calendar',  # Доступ к календарю
-    #     ],
-
-        # # Дополнительные параметры авторизации
-        # 'AUTH_PARAMS': {
-        #     'access_type': 'offline',  # Получить refresh_token. Без этого токен будет действовать только 1 час.
-        #     'prompt': 'consent',  # Всегда запрашивать разрешение. чтобы Google всегда показывал экран разрешений. Иначе может не запросить доступ к календарю.
-        # }
-#     }
-# }

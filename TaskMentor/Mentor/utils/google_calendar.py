@@ -4,8 +4,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
-from django.conf import settings
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 from ..models import GoogleCalendarToken
@@ -70,12 +69,9 @@ def _task_to_event_body(task):
 
     tz = _tz_name()
 
-    summary = task.title or "TaskMentor"
-    description = task.description or ""
-
     return {
-        "summary": summary,
-        "description": description,
+        "summary": task.title or "TaskMentor",
+        "description": task.description or "",
         "start": {"dateTime": due_dt.isoformat(), "timeZone": tz},
         "end": {"dateTime": (due_dt + timedelta(minutes=30)).isoformat(), "timeZone": tz},
         "reminders": {
@@ -85,25 +81,26 @@ def _task_to_event_body(task):
     }
 
 
-def upsert_calendar_event(service, task):
+def upsert_calendar_event(service, task, event_id: str | None = None):
     """
     Если у задачи уже есть calendar_event_id — обновляем событие.
     Если нет — создаём новое и возвращаем.
     """
     body = _task_to_event_body(task)
 
-    if task.calendar_event_id:
+    if event_id:
         # UPDATE
-        event = service.events().update(
+        return service.events().update(
             calendarId="primary",
-            eventId=task.calendar_event_id,
+            eventId=event_id,
             body=body,
         ).execute()
-        return event
 
     # CREATE
-    event = service.events().insert(calendarId="primary", body=body).execute()
-    return event
+    return service.events().insert(
+        calendarId="primary",
+        body=body
+    ).execute()
 
 
 def delete_calendar_event(service, event_id: str) -> bool:
@@ -122,9 +119,10 @@ def delete_calendar_event(service, event_id: str) -> bool:
         return False
 
 
-def sync_task_to_calendar(user, task):
+def sync_task_to_calendar(user, task, event_attr: str):
     """
-    Create/Update event and сохраняем event_id в task.calendar_event_id.
+    Upsert события в календарь user.
+    event_attr: 'teacher_calendar_event_id' или 'student_calendar_event_id'
     """
     service = get_calendar_service(user)
     if not service:
@@ -132,14 +130,13 @@ def sync_task_to_calendar(user, task):
         return None
 
     try:
-        event = upsert_calendar_event(service, task)
+        current_event_id = getattr(task, event_attr, None)
+        event = upsert_calendar_event(service, task, current_event_id)
 
-        if event and event.get("id"):
-            # если create — запишем id; если update — id уже есть
-            if not task.calendar_event_id:
-                task.calendar_event_id = event["id"]
-                task.save(update_fields=["calendar_event_id"])
-            calendar_debug(f"✅ SYNC: Event upserted, id={event.get('id')}")
+        if event and event.get("id") and not current_event_id:
+            setattr(task, event_attr, event["id"])
+            task.save(update_fields=[event_attr])
+            calendar_debug(f"✅ SYNC({event_attr}): Event upserted, id={event.get('id')}")
         return event
 
     except Exception as e:
@@ -147,20 +144,33 @@ def sync_task_to_calendar(user, task):
         return None
 
 
-def remove_task_from_calendar(user, task) -> bool:
+def remove_task_from_calendar(user, task,  event_attr: str) -> bool:
     """
     Удаляет event по task.calendar_event_id и чистит поле в задаче.
     """
-    if not task.calendar_event_id:
+    event_id = getattr(task, event_attr, None)
+    if not event_id:
         return True
 
     service = get_calendar_service(user)
     if not service:
         return False
 
-    ok = delete_calendar_event(service, task.calendar_event_id)
+    ok = delete_calendar_event(service, event_id)
     if ok:
-        task.calendar_event_id = None
-        task.save(update_fields=["calendar_event_id"])
-        print("🗑️ SYNC: Event deleted and task.calendar_event_id cleared")
+        setattr(task, event_attr, None)
+        task.save(update_fields=[event_attr])
+        calendar_debug(f"🗑️ SYNC({event_attr}): Event deleted and cleared")
     return ok
+
+def sync_task_for_teacher(teacher, task):
+    return sync_task_to_calendar(teacher, task, "teacher_calendar_event_id")
+
+def sync_task_for_student(student, task):
+    return sync_task_to_calendar(student, task, "student_calendar_event_id")
+
+def remove_task_for_teacher(teacher, task):
+    return remove_task_from_calendar(teacher, task, "teacher_calendar_event_id")
+
+def remove_task_for_student(student, task):
+    return remove_task_from_calendar(student, task, "student_calendar_event_id")

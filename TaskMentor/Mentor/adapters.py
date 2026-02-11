@@ -1,8 +1,10 @@
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.exceptions import ImmediateHttpResponse
+from allauth.account.utils import perform_login
+from allauth.account.adapter import DefaultAccountAdapter
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
 from django.shortcuts import redirect
 from django.utils import timezone
 from datetime import timedelta
@@ -25,6 +27,10 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         print("🔥 provider =", sociallogin.account.provider)
         print("🔥 email =", (sociallogin.user.email or "").strip().lower())
 
+        # ✅ если пользователь уже залогинен и нажал "подключить" — не вмешиваемся
+        if request.user.is_authenticated:
+            return
+
         """
         Вызывается ДО завершения social login.
         Если пользователь ещё не существует в системе allauth, пытаемся найти
@@ -41,7 +47,8 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
 
         if not email:
             messages.error(request, "Google не передал email. Вход невозможен.")
-            raise ImmediateHttpResponse(redirect("index"))
+            # raise ImmediateHttpResponse(redirect("index"))
+            return
 
         # Если sociallogin уже связан с existing user — ничего не делаем
         if sociallogin.is_existing:
@@ -52,12 +59,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             messages.error(request, "Этот email не зарегистрирован в TaskMentor. Сначала зарегистрируйтесь.")
-            raise ImmediateHttpResponse(redirect("index"))
+            # raise ImmediateHttpResponse(redirect("index"))
+            return
 
-        # Пока оставляем Google только для учителя (как ты сказал)
-        if getattr(user, "user_type", None) != "teacher":
-            messages.error(request, "Вход через Google сейчас доступен только для учителя.")
-            raise ImmediateHttpResponse(redirect("index"))
+        # Разрешаем Google-вход для учителя и ученика (по твоей новой логике)
+        if getattr(user, "user_type", None) not in ("teacher", "student"):
+            messages.error(request, "Этот аккаунт не поддерживает вход через Google.")
+            # raise ImmediateHttpResponse(redirect("index"))
+            return
 
         # Подключаем Google social account к существующему пользователю
         sociallogin.connect(request, user)
@@ -98,3 +107,12 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                     "calendar_id": "primary",
                 },
             )
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    def get_login_redirect_url(self, request):
+        user = request.user
+        if getattr(user, "user_type", None) == "teacher":
+            return "/teacher/dashboard/"
+        if getattr(user, "user_type", None) == "student":
+            return "/student/dashboard/"
+        return "/"
