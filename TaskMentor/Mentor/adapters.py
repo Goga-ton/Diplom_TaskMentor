@@ -2,6 +2,7 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.account.utils import perform_login
 from allauth.account.adapter import DefaultAccountAdapter
+from allauth.socialaccount.models import SocialAccount
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
@@ -104,7 +105,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                     "access_token": access_token,
                     "refresh_token": refresh_token,
                     "token_expiry": timezone.now() + timedelta(hours=1),
-                    "calendar_id": "primary",
+                    # "calendar_id": "primary",
                 },
             )
 
@@ -116,3 +117,46 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         if getattr(user, "user_type", None) == "student":
             return "/student/dashboard/"
         return "/"
+
+from .models import GoogleCalendarToken
+
+
+def fix_google_calendar_token(user, session) -> bool:
+    """
+    Гарантирует наличие GoogleCalendarToken для user.
+    Источники:
+      1) allauth SocialToken (token + token_secret)
+      2) session fallback (google_calendar_token + google_refresh_token)
+    """
+    social = SocialAccount.objects.filter(user=user, provider__iexact="google").first()
+
+    token = None
+    refresh_token = ""
+
+    if social:
+        token_obj = social.socialtoken_set.first()
+        if token_obj:
+            token = token_obj.token
+            refresh_token = getattr(token_obj, "token_secret", "") or ""
+
+    if (not token or token == "dummy_access_token") and session.get("google_token_saved"):
+        token = session.get("google_calendar_token")
+        refresh_token = session.get("google_refresh_token", "") or ""
+
+        session.pop("google_calendar_token", None)
+        session.pop("google_refresh_token", None)
+        session.pop("google_token_saved", None)
+
+    if token and token != "dummy_access_token":
+        GoogleCalendarToken.objects.update_or_create(
+            user=user,
+            defaults={
+                "access_token": token,
+                "refresh_token": refresh_token,
+                "token_expiry": timezone.now() + timedelta(hours=1),
+                # "calendar_id": "primary",
+            },
+        )
+        return True
+
+    return False
