@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, TeacherProfile, StudentProfile, WebPushSubscription, GoogleCalendarToken
+from .models import (User, TeacherProfile, StudentProfile,
+                     WebPushSubscription, GoogleCalendarToken, Task)
 
 class TeacherProfileInline(admin.StackedInline):
     model = TeacherProfile
@@ -39,3 +40,10 @@ class GoogleCalendarTokenAdmin(admin.ModelAdmin):
     list_filter = ['token_expiry']
     search_fields = ['user__email']
     readonly_fields = ['access_token', 'refresh_token', 'token_expiry', 'calendar_id']  # Токены только для чтения
+
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "teacher", "student", "due_date", "is_completed", "reminded_at")
+    list_filter = ("is_completed", "priority")
+    search_fields = ("title", "student__email", "teacher__email")
+    readonly_fields = ("teacher_calendar_event_id", "student_calendar_event_id")

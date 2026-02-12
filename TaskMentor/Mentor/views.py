@@ -138,38 +138,7 @@ def teacher_dashboard(request):
     if request.user.user_type != 'teacher':  # Проверка роли
         return redirect('index')
 
-    #     # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
-    # from allauth.socialaccount.models import SocialAccount
-    # social = SocialAccount.objects.filter(user=request.user, provider__iexact='google').first()
-    #
-    # token = None
-    # refresh_token = ''
-    #
-    # if social:
-    #     token_obj = social.socialtoken_set.first()
-    #     if token_obj:
-    #         token = token_obj.token
-    #         # ✅ В allauth refresh_token обычно лежит в token_secret
-    #         refresh_token = getattr(token_obj, 'token_secret', '') or ''
-    #
-    # # Проверяем сессию как запасной вариант
-    # if (not token or token == 'dummy_access_token') and request.session.get('google_token_saved'):
-    #     token = request.session.get('google_calendar_token')
-    #     refresh_token = request.session.get('google_refresh_token', '')
-    #     # Очищаем сессию после использования
-    #     request.session.pop('google_calendar_token', None)
-    #     request.session.pop('google_refresh_token', None)
-    #     request.session.pop('google_token_saved', None)
-    #
-    # if token and token != 'dummy_access_token':
-    #     GoogleCalendarToken.objects.update_or_create(
-    #         user=request.user,
-    #         defaults={
-    #             'access_token': token,
-    #             'refresh_token': refresh_token,
-    #             'token_expiry': timezone.now() + timedelta(hours=1),
-    #         }
-    #     )
+        # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
     fix_google_calendar_token(request.user, request.session)
 
     # ФИЛЬТР ЗАДАЧ (новое!)
@@ -238,37 +207,6 @@ def student_dashboard(request):
         return redirect('index')
 
         # 🔥 GOOGLE TOKEN FIX — ВСТАВИТЬ ЗДЕСЬ
-    # from allauth.socialaccount.models import SocialAccount
-    # social = SocialAccount.objects.filter(user=request.user, provider__iexact='google').first()
-    #
-    # token = None
-    # refresh_token = ''
-    #
-    # if social:
-    #     token_obj = social.socialtoken_set.first()
-    #     if token_obj:
-    #         token = token_obj.token
-    #         # ✅ В allauth refresh_token обычно лежит в token_secret
-    #         refresh_token = getattr(token_obj, 'token_secret', '') or ''
-    #
-    # # Проверяем сессию как запасной вариант
-    # if (not token or token == 'dummy_access_token') and request.session.get('google_token_saved'):
-    #     token = request.session.get('google_calendar_token')
-    #     refresh_token = request.session.get('google_refresh_token', '')
-    #     # Очищаем сессию после использования
-    #     request.session.pop('google_calendar_token', None)
-    #     request.session.pop('google_refresh_token', None)
-    #     request.session.pop('google_token_saved', None)
-    #
-    # if token and token != 'dummy_access_token':
-    #     GoogleCalendarToken.objects.update_or_create(
-    #         user=request.user,
-    #         defaults={
-    #             'access_token': token,
-    #             'refresh_token': refresh_token,
-    #             'token_expiry': timezone.now() + timedelta(hours=1),
-    #         }
-    #     )
     fix_google_calendar_token(request.user, request.session)
 
     view_mode = request.GET.get('view', 'recommended')

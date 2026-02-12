@@ -116,6 +116,7 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
     # calendar_event_id = models.CharField(max_length=100, blank=True, null=True)
     teacher_calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
     student_calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
