@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 import json
 from django.views.decorators.http import require_http_methods, require_POST
 from django.urls import reverse
@@ -577,27 +577,27 @@ class TaskDeleteView(LoginRequiredMixin, View):
         return JsonResponse({'success': True, 'message': 'Задача удалена.'})
 
 
-@csrf_exempt
-@require_POST
-def subscribe_push(request):
-    try:
-        # Парсим JSON из тела запроса
-        body = json.loads(request.body)
-        endpoint = body['endpoint']
-        keys = body['keys']
-
-        WebPushSubscription.objects.update_or_create(
-            user=request.user,
-            endpoint=endpoint,
-            defaults={
-                'p256dh': keys['p256dh'],
-                'auth': keys['auth'],
-            }
-        )
-        return JsonResponse({'status': 'ok'})
-
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+# @csrf_exempt
+# @require_POST
+# def subscribe_push(request):
+#     try:
+#         # Парсим JSON из тела запроса
+#         body = json.loads(request.body)
+#         endpoint = body['endpoint']
+#         keys = body['keys']
+#
+#         WebPushSubscription.objects.update_or_create(
+#             user=request.user,
+#             endpoint=endpoint,
+#             defaults={
+#                 'p256dh': keys['p256dh'],
+#                 'auth': keys['auth'],
+#             }
+#         )
+#         return JsonResponse({'status': 'ok'})
+#
+#     except Exception as e:
+#         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @require_POST
@@ -620,20 +620,45 @@ def test_notification(request):
             pass
     return JsonResponse({'status': 'sent'})
 
-@csrf_exempt
-@require_http_methods(["POST"])
 @login_required
+@require_POST
 def save_push_subscription(request):
     try:
-        sub_data = json.loads(request.body)
+        sub_data = json.loads(request.body.decode("utf-8"))
         WebPushSubscription.objects.update_or_create(
             user=request.user,
+            endpoint=sub_data["endpoint"],   # ✅ endpoint должен участвовать в уникальности
             defaults={
-                'endpoint': sub_data['endpoint'],
-                'p256dh': sub_data['keys']['p256dh'],
-                'auth': sub_data['keys']['auth']
-            }
+                "p256dh": sub_data["keys"]["p256dh"],
+                "auth": sub_data["keys"]["auth"],
+            },
         )
-        return JsonResponse({'status': 'ok'})
+        return JsonResponse({"status": "ok"})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+
+def service_worker(request):
+    js = """
+self.addEventListener('push', function (event) {
+  let data = { title: "TaskMentor", body: "Новое уведомление!" };
+
+  if (event.data) {
+    try { data = event.data.json(); } catch (e) {}
+  }
+
+  const options = {
+    body: data.body,
+    icon: "/static/favicon.ico",
+    badge: "/static/favicon.ico"
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  event.waitUntil(clients.openWindow("/"));
+});
+"""
+    return HttpResponse(js, content_type="application/javascript")

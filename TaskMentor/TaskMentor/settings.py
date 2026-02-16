@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Локальный запуск False для Продакшина
-DEBUG_CALENDAR_SYNC = False
+DEBUG_CALENDAR_SYNC = True  #настройка уведомлений (принтов для тестирования при деплои должно стоять False)
 
 ALLOWED_HOSTS = []
 
@@ -89,6 +89,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Mentor.context_processors.webpush_settings',
             ],
         },
     },
@@ -132,7 +133,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -152,7 +153,7 @@ LOGIN_URL = 'login'
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": os.getenv("WEBPUSH_PUBLIC_KEY"),
     "VAPID_PRIVATE_KEY": os.getenv("WEBPUSH_PRIVATE_KEY"),
-    "VAPID_ADMIN_EMAIL": "mailto:admin@taskmentor.ru"
+    "VAPID_ADMIN_EMAIL": "admin@taskmentor.ru"
 }
 # Celery (Redis брокер)
 CELERY_BROKER_URL = 'redis://localhost:6379/0'

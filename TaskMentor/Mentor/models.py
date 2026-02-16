@@ -115,6 +115,7 @@ class Task(models.Model):
     due_date = models.DateTimeField('Срок')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     is_completed = models.BooleanField(default=False)
+    last_reminded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     reminded_at = models.DateTimeField(null=True, blank=True)
     # calendar_event_id = models.CharField(max_length=100, blank=True, null=True)

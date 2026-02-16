@@ -5,6 +5,7 @@ from googleapiclient.errors import HttpError
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
 from ..models import GoogleCalendarToken
@@ -64,10 +65,22 @@ def _task_to_event_body(task):
     if isinstance(due_dt, str):
         due_dt = parse_datetime(due_dt) or timezone.datetime.fromisoformat(due_dt)
 
-    if timezone.is_naive(due_dt):
-        due_dt = timezone.make_aware(due_dt, timezone.get_current_timezone())
+    # if timezone.is_naive(due_dt):
+        # due_dt = timezone.make_aware(due_dt, timezone.get_current_timezone())
+    MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
-    tz = _tz_name()
+    if timezone.is_naive(due_dt):
+        due_dt = timezone.make_aware(due_dt, MOSCOW_TZ)
+    else:
+        due_dt = due_dt.astimezone(MOSCOW_TZ)
+
+    tz = "Europe/Moscow"
+
+    print("DEBUG due_dt:", due_dt, "tzinfo:", due_dt.tzinfo)
+    print("DEBUG EVENT BODY:", {
+        "start": {"dateTime": due_dt.isoformat(), "timeZone": tz},
+        "end": {"dateTime": (due_dt + timedelta(minutes=30)).isoformat(), "timeZone": tz},
+    })
 
     return {
         "summary": task.title or "TaskMentor",

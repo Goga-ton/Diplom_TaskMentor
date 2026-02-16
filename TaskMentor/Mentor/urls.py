@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import TaskDeleteView
 
-from django.views.generic import RedirectView
+from django.views.generic import RedirectView, TemplateView
 from django.conf import settings
 import os
 
@@ -22,10 +22,12 @@ urlpatterns = [
     path('get-task/<int:task_id>/', views.get_task_data, name='get_task_data'),
     path('complete-task/<int:task_id>/', views.complete_task, name='complete_task'),
     path('api/task/<int:task_id>/delete/', TaskDeleteView.as_view(), name='task_delete'),
-    path('subscribe-push/', views.subscribe_push, name='subscribe_push'),
+    # path('subscribe-push/', views.subscribe_push, name='subscribe_push'),
     path('test-notification/', views.test_notification, name='test_notification'),
     path('save-push-subscription/', views.save_push_subscription, name='save_push_subscription'),
     # path('update-password/<int:app_id>/', views.update_password, name='update_password')
+    path("sw.js", views.service_worker, name="service_worker"),
+
 ]
 
 if settings.DEBUG:
@@ -35,3 +37,14 @@ if settings.DEBUG:
         path('js/push.js', RedirectView.as_view(
             url='/static/js/push.js', permanent=False)),
     ]
+
+urlpatterns += [
+    path(
+        "sw.js",
+        TemplateView.as_view(
+            template_name="sw.js",
+            content_type="application/javascript"
+        ),
+        name="sw_js",
+    ),
+]

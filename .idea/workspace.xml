@@ -4,13 +4,22 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d13756d8-fb02-434b-bfba-8b1f2ce19e38" name="Changes" comment="commit_5.2_GogCalAll+rederict">
+    <list default="true" id="d13756d8-fb02-434b-bfba-8b1f2ce19e38" name="Changes" comment="commit_6_test_Celery">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/social_backends.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/tasks.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/utils/google_calendar.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/utils/google_calendar.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/Mentor/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TaskMentor/TaskMentor/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/TaskMentor/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/TaskMentor/celery.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/TaskMentor/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/TaskMentor/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/static/js/push.js" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/static/js/push.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TaskMentor/static/js/sw.js" beforeDir="false" afterPath="$PROJECT_DIR$/TaskMentor/static/sw.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,9 +86,9 @@
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\Mentor\templates\core" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\static" />
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\TaskMentor" />
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\static\js" />
-      <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\static" />
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor" />
       <recent name="C:\Users\Anton_B\PycharmProjects\Diplom_TaskMentor\TaskMentor\Mentor\templates\core" />
     </key>
@@ -259,7 +268,15 @@
       <option name="project" value="LOCAL" />
       <updated>1770831320725</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="commit_6_test_Celery">
+      <option name="closed" value="true" />
+      <created>1770877197251</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1770877197251</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -293,6 +310,7 @@
     <MESSAGE value="commit_5.1_GogCalTeach" />
     <MESSAGE value="commit_5.2_GogCalAllOK" />
     <MESSAGE value="commit_5.2_GogCalAll+rederict" />
-    <option name="LAST_COMMIT_MESSAGE" value="commit_5.2_GogCalAll+rederict" />
+    <MESSAGE value="commit_6_test_Celery" />
+    <option name="LAST_COMMIT_MESSAGE" value="commit_6_test_Celery" />
   </component>
 </project>

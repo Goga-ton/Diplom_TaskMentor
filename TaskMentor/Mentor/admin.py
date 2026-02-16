@@ -43,7 +43,7 @@ class GoogleCalendarTokenAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "teacher", "student", "due_date", "is_completed", "reminded_at")
+    list_display = ("id", "title", "teacher", "student", "due_date", "is_completed", "reminded_at", "last_reminded_at")
     list_filter = ("is_completed", "priority")
     search_fields = ("title", "student__email", "teacher__email")
     readonly_fields = ("teacher_calendar_event_id", "student_calendar_event_id")
