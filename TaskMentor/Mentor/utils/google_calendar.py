@@ -12,18 +12,18 @@ from ..models import GoogleCalendarToken
 
 #Для выключения и включения флага при отладке параметр задается в settings в DEBUG_CALENDAR_SYNC
 from django.conf import settings
-def calendar_debug(message: str):
+def calendar_debug(*args):
     if getattr(settings, "DEBUG_CALENDAR_SYNC", False):
-        print(message)
+        print(*args)
 
 load_dotenv()
 
-def _tz_name() -> str:
-    # Берём текущую таймзону Django (в settings.py у тебя сейчас TIME_ZONE = 'UTC')
-    try:
-        return timezone.get_current_timezone_name()
-    except Exception:
-        return "UTC"
+# def _tz_name() -> str:
+#     # Берём текущую таймзону Django (в settings.py у тебя сейчас TIME_ZONE = 'UTC')
+#     try:
+#         return timezone.get_current_timezone_name()
+#     except Exception:
+#         return "UTC"
 
 
 def get_calendar_service(user):
@@ -76,11 +76,10 @@ def _task_to_event_body(task):
 
     tz = "Europe/Moscow"
 
-    print("DEBUG due_dt:", due_dt, "tzinfo:", due_dt.tzinfo)
-    print("DEBUG EVENT BODY:", {
+    calendar_debug("DEBUG due_dt:", due_dt, "tzinfo:", due_dt.tzinfo)
+    calendar_debug("DEBUG EVENT BODY:", {
         "start": {"dateTime": due_dt.isoformat(), "timeZone": tz},
-        "end": {"dateTime": (due_dt + timedelta(minutes=30)).isoformat(), "timeZone": tz},
-    })
+        "end": {"dateTime": (due_dt + timedelta(minutes=30)).isoformat(), "timeZone": tz},},)
 
     return {
         "summary": task.title or "TaskMentor",

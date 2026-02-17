@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.csrf import csrf_protect #csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 import json
@@ -17,14 +17,14 @@ from django.db.models.functions import TruncDay
 from datetime import timedelta
 from django.conf import settings
 import math
-from pywebpush import webpush
+# from pywebpush import webpush
 from .utils.google_calendar import (sync_task_for_teacher, sync_task_for_student,
                                     remove_task_for_teacher, remove_task_for_student)
-#sync_task_to_calendar, remove_task_from_calendar
+from .utils.firebase_fcm import send_fcm_to_token
 
 from .models import (StudentApplication, StudentProfile,
                      User, Task, MoodEntry, WebPushSubscription,
-                     GoogleCalendarToken)
+                     GoogleCalendarToken, FCMDeviceToken)
 from .forms import (TeacherRegistrationForm, StudentApplicationForm,
                     EmailAuthenticationForm, MoodEntryForm)
 from .adapters import fix_google_calendar_token
@@ -439,7 +439,7 @@ def create_task(request):
                 sync_task_for_teacher(request.user, task)
             except Exception:
                 pass
-        # ✅ синхронизация календаря ученика — по твоей логике 1A+2A+3A:
+        # ✅ синхронизация календаря ученика
         # если ученик не подключил — просто молча пропускаем
         if GoogleCalendarToken.objects.filter(user=student).exists():
             try:
@@ -599,26 +599,26 @@ class TaskDeleteView(LoginRequiredMixin, View):
 #     except Exception as e:
 #         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
-@require_POST
-def test_notification(request):
-    for sub in request.user.push_subscriptions.all():
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
-                },
-                data=json.dumps({  # ← json.dumps!
-                    "title": "🔔 TaskMentor",
-                    "body": "Тест push!"
-                }),
-                vapid_private_key=settings.WEBPUSH_SETTINGS["VAPID_PRIVATE_KEY"],
-                vapid_claims={"sub": settings.WEBPUSH_SETTINGS["VAPID_ADMIN_EMAIL"]}
-            )
-        except Exception:
-            pass
-    return JsonResponse({'status': 'sent'})
+# @csrf_exempt
+# @require_POST
+# def test_notification(request):
+#     for sub in request.user.push_subscriptions.all():
+#         try:
+#             webpush(
+#                 subscription_info={
+#                     "endpoint": sub.endpoint,
+#                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+#                 },
+#                 data=json.dumps({  # ← json.dumps!
+#                     "title": "🔔 TaskMentor",
+#                     "body": "Тест push!"
+#                 }),
+#                 vapid_private_key=settings.WEBPUSH_SETTINGS["VAPID_PRIVATE_KEY"],
+#                 vapid_claims={"sub": settings.WEBPUSH_SETTINGS["VAPID_ADMIN_EMAIL"]}
+#             )
+#         except Exception:
+#             pass
+#     return JsonResponse({'status': 'sent'})
 
 @login_required
 @require_POST
@@ -662,3 +662,63 @@ self.addEventListener('notificationclick', function (event) {
 });
 """
     return HttpResponse(js, content_type="application/javascript")
+
+
+@login_required
+@require_POST
+def save_fcm_token(request):
+    """
+    Это будет вызываться мобильным приложением:
+    POST JSON: { "token": "...", "platform": "android|ios" }
+    """
+    if not getattr(settings, "FCM_ENABLED", False):
+        return JsonResponse({"ok": False, "error": "FCM disabled"}, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        token = (payload.get("token") or "").strip()
+        platform = (payload.get("platform") or "unknown").strip().lower()
+
+        if not token:
+            return JsonResponse({"ok": False, "error": "token is required"}, status=400)
+
+        obj, _ = FCMDeviceToken.objects.update_or_create(
+            token=token,
+            defaults={
+                "user": request.user,
+                "platform": platform if platform in ("android", "ios") else "unknown",
+                "is_active": True,
+            },
+        )
+        return JsonResponse({"ok": True})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+
+@login_required
+@require_POST
+def test_fcm_notification(request):
+    """
+    Тестируем backend-часть.
+    Без реального токена устройство не получит уведомление,
+    но мы увидим ответ FCM (успех или ожидаемую ошибку).
+    """
+    if not getattr(settings, "FCM_ENABLED", False):
+        return JsonResponse({"ok": False, "error": "FCM disabled"}, status=400)
+
+    # Берём любой активный токен пользователя
+    token_obj = request.user.fcm_tokens.filter(is_active=True).order_by("-last_seen_at").first()
+    if not token_obj:
+        return JsonResponse({
+            "ok": False,
+            "error": "No FCM tokens for this user. (No mobile app yet)"
+        }, status=400)
+
+    res = send_fcm_to_token(
+        token=token_obj.token,
+        title="TaskMentor (FCM)",
+        body="Тест mobile push (server-side).",
+        data={"kind": "test"},
+        dry_run=True,  # ✅ ключевой момент для диплома без мобилки
+    )
+    return JsonResponse(res)

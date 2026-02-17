@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (User, TeacherProfile, StudentProfile,
-                     WebPushSubscription, GoogleCalendarToken, Task)
+                     WebPushSubscription, GoogleCalendarToken, Task,
+                     FCMDeviceToken)
 
 class TeacherProfileInline(admin.StackedInline):
     model = TeacherProfile
@@ -47,3 +48,9 @@ class TaskAdmin(admin.ModelAdmin):
     list_filter = ("is_completed", "priority")
     search_fields = ("title", "student__email", "teacher__email")
     readonly_fields = ("teacher_calendar_event_id", "student_calendar_event_id")
+
+@admin.register(FCMDeviceToken)
+class FCMDeviceTokenAdmin(admin.ModelAdmin):
+    list_display = ("user", "platform", "is_active", "created_at", "last_seen_at")
+    list_filter = ("platform", "is_active")
+    search_fields = ("user__email", "token")

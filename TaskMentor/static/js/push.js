@@ -43,7 +43,7 @@ async function subscribeUserToPush() {
     try {
       reg = await navigator.serviceWorker.register('/sw.js');
       console.log("✅ SW registered:", reg);
-    } catch (e) {А
+    } catch (e) {
       console.error("❌ SW register failed:", e);
       return;
     }
@@ -68,12 +68,24 @@ async function subscribeUserToPush() {
       return;
     }
 
-    console.log("🧷 VAPID used for subscribe:", vapidPublicKey);
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    });
-    console.log("✅ subscription created");
+// ✅ не создаём новую подписку, если уже есть
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      console.log("🧷 creating new subscription...");
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+      console.log("✅ subscription created");
+    } else {
+      console.log("✅ existing subscription reused");
+    }
+//    console.log("🧷 VAPID used for subscribe:", vapidPublicKey);
+//    const subscription = await registration.pushManager.subscribe({
+//      userVisibleOnly: true,
+//      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+//    });
+//    console.log("✅ subscription created");
 
     const csrftoken = getCookie("csrftoken");
     console.log("🍪 csrftoken present:", !!csrftoken);

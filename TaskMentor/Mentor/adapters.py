@@ -1,15 +1,15 @@
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.exceptions import ImmediateHttpResponse
-from allauth.account.utils import perform_login
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.models import SocialAccount
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login
+from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 from django.utils import timezone
 from datetime import timedelta
 
+from .utils.google_calendar import calendar_debug
 from .models import GoogleCalendarToken
 
 
@@ -24,9 +24,9 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     """
 
     def pre_social_login(self, request, sociallogin):
-        print("🔥 ADAPTER pre_social_login CALLED")
-        print("🔥 provider =", sociallogin.account.provider)
-        print("🔥 email =", (sociallogin.user.email or "").strip().lower())
+        calendar_debug("🔥 ADAPTER pre_social_login CALLED")
+        calendar_debug("🔥 provider =", sociallogin.account.provider)
+        calendar_debug("🔥 email =", (sociallogin.user.email or "").strip().lower())
 
         # ✅ если пользователь уже залогинен и нажал "подключить" — не вмешиваемся
         if request.user.is_authenticated:
@@ -79,10 +79,10 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         return False
 
     def save_token(self, request, sociallogin, token):
-        print("🔥 ADAPTER save_token CALLED")
-        print("🔥 provider =", sociallogin.account.provider)
-        print("🔥 access_token =", (token.token or "")[:20])
-        print("🔥 refresh_token =", (token.token_secret or "")[:20])
+        calendar_debug("🔥 ADAPTER save_token CALLED")
+        calendar_debug("🔥 provider =", sociallogin.account.provider)
+        calendar_debug("🔥 access_token =", (token.token or "")[:20])
+        calendar_debug("🔥 refresh_token =", (token.token_secret or "")[:20])
         """
         Оставляем твою логику сохранения токена в GoogleCalendarToken.
         """

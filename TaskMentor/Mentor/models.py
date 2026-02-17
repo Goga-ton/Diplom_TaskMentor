@@ -1,11 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
 from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 USER_TYPE_CHOICES = [
     ('teacher', 'Учитель (Коуч/Психолог)'),
@@ -177,10 +175,6 @@ class GoogleCalendarToken(models.Model):
     token_expiry = models.DateTimeField()
     calendar_id = models.CharField(max_length=200, default='primary')  # 'primary' или custom
 
-    def refresh_access_token(self): # заглушка, d gthcgtrnbdt lолжен обновлять истёкший access_token с помощью refresh_token через Google OAuth API.
-        # Логика refresh (ниже в utils)
-        pass
-
     def is_expired(self): #проверяtт, не истёк ли токен (token_expiry).
         from django.utils import timezone
         return timezone.now() >= self.token_expiry
@@ -189,3 +183,27 @@ class GoogleCalendarToken(models.Model):
         return f"Calendar tokens for {self.user.email}"
 
 
+class FCMDeviceToken(models.Model):
+    """
+    Токены устройств для Mobile Push через Firebase Cloud Messaging.
+    Без мобильного приложения токены не появятся, но backend готов.
+    """
+    PLATFORM_CHOICES = [
+        ("android", "Android"),
+        ("ios", "iOS"),
+        ("unknown", "Unknown"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="fcm_tokens",
+    )
+    token = models.TextField(unique=True)
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default="unknown")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.email} ({self.platform}) {self.token[:20]}..."

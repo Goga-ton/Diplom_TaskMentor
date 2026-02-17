@@ -1,17 +1,10 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.utils import timezone
-from django.conf import settings
 import json
-
 from pywebpush import webpush, WebPushException
-
 from .models import Task, WebPushSubscription
-
+from .utils.google_calendar import calendar_debug
 from django.conf import settings
-def calendar_debug(message: str):
-    if getattr(settings, "DEBUG_CALENDAR_SYNC", False):
-        print(message)
-
 
 def send_webpush(user, title: str, body: str):
     calendar_debug(f"🚀 Sending push to, {user.email}")

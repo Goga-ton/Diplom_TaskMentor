@@ -14,10 +14,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True # Локальный запуск False для Продакшина
-DEBUG_CALENDAR_SYNC = True  #настройка уведомлений (принтов для тестирования при деплои должно стоять False)
+DEBUG = True # Локальный запуск, False для Продакшина и там еще кучу настроек нужно будет делать
+DEBUG_CALENDAR_SYNC = True  # отладочные print'ы для Google Calendar sync False выключит принты
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [] #если DEBUG = False тогда в скобках ("127.0.0.1", "localhost"), если True тогда ничего
 
 AUTH_USER_MODEL = 'Mentor.User'
 
@@ -45,8 +45,12 @@ SOCIALACCOUNT_AUTO_SIGNUP = False  # Автоматически создават
 SOCIALACCOUNT_EMAIL_REQUIRED = True #Email обязателен для социальных аккаунтов. Если у провайдера нет email - вход будет отклонен.
 SOCIALACCOUNT_ADAPTER = 'Mentor.adapters.CustomSocialAccountAdapter'
 ACCOUNT_ADAPTER = "Mentor.adapters.CustomAccountAdapter"
-# Application definition
 
+#Для мобильного приложения
+FCM_ENABLED = os.getenv("FCM_ENABLED", "false").lower() == "true"
+FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "")
+
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.admin',
@@ -57,13 +61,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'Mentor',
+
+    'webpush',
+    'django_celery_beat',
 # Allauth ВСЕГДА после sites
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
 
-    #'social_django', №нужно удалить по рекомендации DeepSeek т.к. дублируется с  'allauth'
 ]
 
 MIDDLEWARE = [
@@ -142,7 +148,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / 'staticfiles' # создает каталог staticfiles для Продакшена
 
@@ -164,12 +170,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # Планировщик
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-INSTALLED_APPS += [
-    'webpush',
-    'celery',
-    'django_celery_beat',
-]
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

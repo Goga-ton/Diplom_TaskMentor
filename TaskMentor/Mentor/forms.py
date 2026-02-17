@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
 
-from .models import TeacherProfile, StudentProfile, MoodEntry
+from .models import TeacherProfile, MoodEntry
 
 User = get_user_model()
 
@@ -51,7 +51,7 @@ class BaseRegistrationForm(forms.ModelForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email'].lower()
         user.set_password(self.cleaned_data['password1'])
-        user.username = user.email # username = email (уникальный)
+        # user.username = user.email # username = email (уникальный)
         if commit:
             user.save()
         return user
