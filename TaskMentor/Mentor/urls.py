@@ -21,7 +21,7 @@ urlpatterns = [
     path('get-task/<int:task_id>/', views.get_task_data, name='get_task_data'),
     path('complete-task/<int:task_id>/', views.complete_task, name='complete_task'),
     path('api/task/<int:task_id>/delete/', TaskDeleteView.as_view(), name='task_delete'),
-    # path('test-notification/', views.test_notification, name='test_notification'),
+
     path('save-push-subscription/', views.save_push_subscription, name='save_push_subscription'),
     path("sw.js", views.service_worker, name="service_worker"),
     path("save-fcm-token/", views.save_fcm_token, name="save_fcm_token"),

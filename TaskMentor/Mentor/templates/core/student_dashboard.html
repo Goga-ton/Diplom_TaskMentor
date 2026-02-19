@@ -4,71 +4,100 @@
 {% block content %}
 {% csrf_token %}
 <div class="container mt-5">
-  <h1>Привет, {{ profile.nickname }}!</h1>
-  <p>Учитель: {{ teacher.firstname }}</p>
-
-  <div class="card mb-3">
-    <div class="card-header"><strong>Google Calendar</strong></div>
-    <div class="card-body">
-      {% if has_calendar_token %}
-        <div class="alert alert-success mb-0">
-          Google Calendar подключён
+  <div class="row">
+    <div class="col-12">
+      <div class="tm-page-header mb-4">
+        <h1 class="tm-page-title mb-1">
+          Привет, {{ profile.nickname }}!
+        </h1>
+        <div class="tm-page-subtitle">
+          Ваш наставник: {{ teacher.first_name }}
         </div>
-      {% else %}
-        <p>Подключите Google Calendar для синхронизации задач</p>
-        <a href="/accounts/google/login/" class="btn btn-primary">
-          Подключить Google Calendar
-        </a>
-        <small class="d-block text-muted mt-2">
-          После подключения задачи будут добавляться в ваш календарь
-        </small>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- ➕ НОВЫЙ блок задач -->
-  <div class="row mt-4">
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Самочувствие сегодня</h5>
-        <form method="post">
-          {% csrf_token %}
-          <input type="hidden" name="form" value="mood">
-          {{ mood_form.mood }}
-          <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
-        </form>
       </div>
     </div>
+  </div>
+    <!-- Верхние 3 блока: Calendar + Mood рядом, Progress ниже -->
+    <div class="row g-3 mt-3">
 
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Прогресс</h5>
-        <p class="mb-1">{{ progress_percent }}% ({{ completed_tasks }} из {{ total_tasks }})</p>
-        <div class="progress">
-          <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%;">
+      <!-- Google Calendar -->
+      <div class="col-12 col-lg-6">
+        <div class="card tm-card-soft tm-card-soft--cool h-100">
+          <div class="card-header"><strong>Google Calendar</strong></div>
+          <div class="card-body text-center">
+            {% if has_calendar_token %}
+              <div class="alert alert-success mb-0">
+                Google Calendar подключён
+              </div>
+            {% else %}
+              <p>Подключите Google Calendar для синхронизации задач</p>
+              <a href="/accounts/google/login/" class="btn btn-primary">
+                Подключить Google Calendar
+              </a>
+              <small class="d-block text-muted mt-2">
+                После подключения задачи будут добавляться в ваш календарь
+              </small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Самочувствие -->
+      <div class="col-12 col-lg-6">
+        <div class="card tm-card-soft tm-card-soft--cool h-100">
+          <div class="card-header"><strong>Самочувствие</strong></div>
+          <div class="card-body">
+            <form method="post" class="mb-0">
+              {% csrf_token %}
+              <input type="hidden" name="form" value="mood">
+              {{ mood_form.mood }}
+              <div class="text-end mt-3">
+                <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Прогресс -->
+      <div class="col-12">
+        <div class="card tm-card-soft tm-card-soft--cool">
+          <div class="card-header"><strong>Прогресс</strong></div>
+          <div class="card-body">
+            <p class="mb-1">{{ progress_percent }}% ({{ completed_tasks }} из {{ total_tasks }})</p>
+            <div class="progress">
+              <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="row g-3 mt-2">
+      <!-- График настроения -->
+      <div class="col-12 col-lg-6">
+        <div class="card mb-0">
+          <div class="card-header">Настроение (30 дней)</div>
+          <div class="card-body">
+            <canvas id="moodChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- График задач -->
+      <div class="col-12 col-lg-6">
+        <div class="card mb-0">
+          <div class="card-header">Задачи по дням</div>
+          <div class="card-body">
+            <canvas id="taskChart" height="120"></canvas>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- График настроения -->
-    <div class="card mb-3">
-      <div class="card-header">Настроение (30 дней)</div>
-      <div class="card-body">
-        <canvas id="moodChart" height="100"></canvas>
-      </div>
-    </div>
-    <!-- График задач -->
-    <div class="card mb-3">
-      <div class="card-header">Задачи по дням</div>
-      <div class="card-body">
-        <canvas id="taskChart" height="100"></canvas>
-      </div>
-    </div>
-
-    <div class="task-view-switch">
+    <div class="task-view-switch mt-4">
       <form method="get" class="mb-3">
-        <label for="viewSelect" class="form-label">Сортировка</label>
+        <label for="viewSelect" class="form-label fw-semibold text-dark">Сортировка задач</label>
         <select id="viewSelect" name="view" class="form-select" onchange="this.form.submit()">
           <option value="recommended" {% if view_mode == "recommended" %}selected{% endif %}>
             По умолчанию (Рекомендуется)
@@ -79,9 +108,6 @@
           <option value="priority" {% if view_mode == "priority" %}selected{% endif %}>
             По приоритету
           </option>
-  <!--              <option value="hot" {% if viewmode == "hot" %}selected{% endif %}>-->
-  <!--                Hot-->
-  <!--              </option>-->
           <option value="24hours" {% if view_mode == "24hours" %}selected{% endif %}>
             Ближайшие 24 часа
           </option>
@@ -91,44 +117,63 @@
     <div class="col-12">
       <h3>Мои задачи <span class="badge bg-info">{{ tasks.count }}</span></h3>
       {% for task in tasks %}
-      <div class="card mb-2">
-        <div class="card-body">
-          <h6 class="card-title">{{ task.title }}</h6>
-          <p class="card-text">{{ task.description|truncatewords:20|default:"—" }}</p>
-          <small class="text-muted d-block">
-            debug: priority_weight={{ task.priority_weight }},
-            days_left_ceil={{ task.days_left_ceil|default:"-" }},
-            urgency={{ task.urgency|default:"-" }}
-          </small>
+      <div class="card mb-2
+        {% if not task.is_completed and task.due_date < now %}
+          tm-task-overdue
+        {% endif %}
+      ">
 
-          <div class="d-flex justify-content-between">
-            <small class="d-block text-muted">
-              Приоритет:
-              {% if task.priority == 'high' %}
-                <span class="badge bg-danger">Высокий</span>
-              {% elif task.priority == 'medium' %}
-                <span class="badge bg-warning text-dark">Средний</span>
-              {% else %}
-                <span class="badge bg-secondary">Низкий</span>
+        <div class="card-body">
+          <!-- Верхняя строка: название + статус -->
+          <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-1 task-title">{{ task.title }}</h5>
+              {% if task.is_completed %}
+                <span class="badge bg-success">Выполнено</span>
+              {% elif task.due_date < now %}
+                <span class="badge bg-danger">Просрочено</span>
               {% endif %}
-            </small>
-            <small class="text-muted">
-              {% if task.due_date > now %}
-                📅 {{ task.due_date|date:"d.m.Y H:i" }}
-              {% else %}
-                ⏰ Просрочено: {{ task.due_date|date:"d.m.Y H:i" }}
-              {% endif %}
-            </small>
-            <span class="badge {{ task.is_completed|yesno:'bg-success,bg-danger' }}">
-              {{ task.is_completed|yesno:'Выполнено,В работе' }}
-            </span>
+<!--            <span class="badge {{ task.is_completed|yesno:'bg-success,bg-warning' }}">-->
+<!--              {{ task.is_completed|yesno:'Выполнено,В работе' }}-->
+<!--            </span>-->
           </div>
+
+          <!-- Описание -->
+          <p class="text-muted small mb-2">
+            {{ task.description|truncatewords:20|default:"—" }}
+          </p>
+
+          <!-- Метаданные -->
+          <div class="d-flex flex-wrap gap-2 align-items-center small">
+
+            <!-- Дедлайн -->
+            <span class="badge bg-light text-dark border">
+              {% if task.due_date > now %}
+                📅&nbsp;&nbsp;{{ task.due_date|date:"d.m.Y H:i" }}
+              {% else %}
+                ⏰&nbsp;&nbsp;{{ task.due_date|date:"d.m.Y H:i" }}
+              {% endif %}
+            </span>
+
+            <!-- Приоритет -->
+            {% if task.priority == 'high' %}
+              <span class="badge tm-priority tm-priority--high">Высокий</span>
+            {% elif task.priority == 'medium' %}
+              <span class="badge tm-priority tm-priority--medium">Средний</span>
+            {% else %}
+              <span class="badge tm-priority tm-priority--low">Низкий</span>
+            {% endif %}
+
+          </div>
+
           {% if not task.is_completed %}
-          <button class="btn btn-sm btn-success mt-2" onclick="completeTask({{ task.id }})">
-            ✅ Отметить выполненной
-          </button>
+            <div class="text-end mt-3">
+              <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                ✅ Отметить выполненной
+              </button>
+            </div>
           {% endif %}
         </div>
+
       </div>
       {% empty %}
       <div class="alert alert-info">
@@ -180,6 +225,27 @@ function completeTask(taskId) {
   const moodLabels = moodEntries.map(entry => entry[0]);
   const moodValues = moodEntries.map(entry => entry[1]);
 
+  // ✅ Берём бренд-цвета из CSS (Bootstrap primary переопределён в style.css)
+  const TM_PRIMARY = getComputedStyle(document.documentElement)
+    .getPropertyValue('--bs-primary')
+    .trim() || '#ff6b35';
+
+  const TM_SUCCESS = getComputedStyle(document.documentElement)
+    .getPropertyValue('--bs-success')
+    .trim() || '#198754';
+
+
+  function hexToRgb(hex) {
+    const h = hex.replace('#', '').trim();
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const num = parseInt(full, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+  function rgba(hex, a) {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
   const ctxMood = document.getElementById('moodChart').getContext('2d');
   new Chart(ctxMood, {
     type: 'line',
@@ -188,8 +254,14 @@ function completeTask(taskId) {
       datasets: [{
         label: 'Настроение',
         data: moodValues,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.4
+        borderColor: TM_PRIMARY,
+        backgroundColor: rgba(TM_PRIMARY, 0.12),
+        pointBackgroundColor: TM_PRIMARY,
+        pointBorderColor: '#fff',
+        pointRadius: 3,
+        borderWidth: 2,
+        tension: 0.35,
+        fill: true,
       }]
     },
     options: {
@@ -221,9 +293,41 @@ function completeTask(taskId) {
     data: {
       labels: taskLabels,
       datasets: [
-        { label: 'Создано', data: taskCreated, backgroundColor: 'rgba(54, 162, 235, 0.5)' },
-        { label: 'Выполнено', data: taskCompleted, backgroundColor: 'rgba(75, 192, 192, 0.5)' }
+        {
+          label: 'Создано',
+          data: taskCreated,
+          backgroundColor: rgba(TM_PRIMARY, 0.35),
+          borderColor: TM_PRIMARY,
+          borderWidth: 1,
+          borderRadius: 6
+        },
+        {
+          label: 'Выполнено',
+          data: taskCompleted,
+          backgroundColor: rgba(TM_SUCCESS, 0.45),
+          borderColor: TM_SUCCESS,
+          borderWidth: 1,
+          borderRadius: 6
+        }
       ]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          padding: 10,
+          titleColor: '#fff',
+          bodyColor: '#fff'
+        }
+      }
     }
   });
 </script>

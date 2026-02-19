@@ -25,8 +25,8 @@
 </div>
 
 <!-- Модальное окно идентификации -->
-<div id="authModal" class="modal">
-    <div class="modal-content">
+<div id="authModal" class="tm-modal">
+    <div class="tm-modal-content">
         <span class="close">&times</span>
         <div id="loginForm">
             <h2 id="modalTitle">Идентификация</h2>
@@ -37,8 +37,8 @@
                     <input type="email" name="email" placeholder="Email" required class="form-control mb-3">
                     <input type="password" name="password" placeholder="Пароль" required class="form-control mb-3">
                 </div>
-                <button type="submit" class="btn btn-outline-primary w-100 mb-2">Войти</button>
-                <button type="button" onclick="goToRegister()" class="btn btn-outline-primary w-100 mb-3"
+                <button type="submit" class="btn btn-login w-100 mb-2">Войти</button>
+                <button type="button" onclick="goToRegister()" class="btn btn-login w-100 mb-3"
                         id="registerBtn">Регистрация
                 </button>
                 <a href="/accounts/google/login/" class="btn btn-danger w-70 float-end">

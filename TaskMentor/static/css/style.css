@@ -1,3 +1,205 @@
+/* ==========================================================================
+   1) Переменные темы и базовые переопределения Bootstrap
+   ========================================================================== */
+:root {
+    --bs-primary: #ff6b35;
+    --bs-primary-rgb: 255,107,53;
+}
+body {
+    background-color: #f6f8fb;
+}
+/* Кнопки */
+.btn-primary {
+    --bs-btn-bg: #ff6b35;
+    --bs-btn-border-color: #ff6b35;
+    --bs-btn-hover-bg: #e85a2c;
+    --bs-btn-hover-border-color: #e85a2c;
+    --bs-btn-active-bg: #e85a2c;
+    --bs-btn-active-border-color: #e85a2c;
+}
+.btn-outline-primary {
+    --bs-btn-color: #ff6b35;
+    --bs-btn-border-color: #ff6b35;
+    --bs-btn-hover-bg: #ff6b35;
+    --bs-btn-hover-border-color: #ff6b35;
+    --bs-btn-hover-color: #fff;
+}
+/* Бейджи Bootstrap (адаптированы под палитру TaskMentor) */
+.bg-info {
+    background-color: rgba(255, 107, 53, 0.15) !important;
+    color: #ff6b35 !important;
+}
+.bg-warning {
+    background-color: #ffe8d6 !important; /* мягкий персиковый */
+    color: #b45309 !important;            /* тёплый тёмно-оранжевый текст */
+}
+.bg-success {
+    background-color: #d1fae5 !important; /* мягкий зелёный */
+    color: #065f46 !important;
+}
+.bg-danger {
+    background-color: #fee2e2 !important; /* мягкий красный */
+    color: #991b1b !important;
+}
+
+/* ==========================================================================
+   2) Навигация и заголовки страниц
+   ========================================================================== */
+
+/* Верхняя навигация */
+.tm-navbar{
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+}
+
+.tm-brand{
+  color: #fff !important;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.tm-navlink{
+  color: rgba(255,255,255,0.92) !important;
+}
+
+.tm-navlink:hover{
+  color: #fff !important;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.tm-logout{
+  border-radius: 999px;
+}
+/* Шапка страниц (dashboard header) */
+.tm-page-header{
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(255,107,53,0.25);
+  text-align: center;
+}
+.tm-page-title{
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.tm-page-subtitle{
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   3) Карточки и компоненты интерфейса
+   ========================================================================== */
+
+/* Карточки */
+.card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+}
+.card-header{
+  background: rgba(255, 107, 53, 0.08); /* лёгкий оранжевый оттенок */
+  border-bottom: 1px solid rgba(255, 107, 53, 0.18);
+  font-weight: 600;
+  text-align: center;
+}
+/* Прогресс */
+.progress {
+    background-color: #fde6dc;  /* очень светлый оранжевый фон */
+    border-radius: 10px;
+    height: 8px;
+}
+.progress-bar {
+    background: linear-gradient(
+        90deg,
+        rgba(255,107,53,0.25) 0%,
+        rgba(255,107,53,0.6) 40%,
+        #ff6b35 100%
+    );
+    border-radius: 10px;
+}
+/* Кнопки внутри карточек */
+.card .btn-sm {
+    border-radius: 10px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+}
+.card .btn-primary {
+    background: #ff6b35;
+    border-color: #ff6b35;
+}
+.card .btn-primary:hover {
+    background: #e85a2c;
+    border-color: #e85a2c;
+}
+/* “Мягкие” карточки (teacher/student dashboards) */
+.tm-card-soft{
+  background-color: #f1f5f9;  /* очень светлый голубо-серый */
+  border: 2px solid #ff6b35;
+}
+/* Student dashboard — чуть холоднее */
+.tm-card-soft--cool{
+  background-color: #eaf2ff;            /* чуть голубее, чем #f1f5f9 */
+  border: 2px solid rgba(255,107,53,.55);/* рамка в бренд-оранжевом, но мягче */
+}
+/* Алерт календаря (teacher dashboard) */
+.tm-alert-calendar{
+  background-color: #ffe8d6;   /* мягкий оранжевый */
+  color: #b45309;
+  border: 1px solid rgba(255,107,53,0.3);
+}
+
+/* ==========================================================================
+   4) Задачи: статусы, приоритеты, просрочки
+   ========================================================================== */
+
+/* Бейдж “Просрочено” (teacher dashboard) */
+.tm-badge-overdue{
+  background-color: #ff0000 !important; /* ярко красный */
+  color: #ffe8d6 !important;           /* мягкий тёплый/оранжевый текст */
+  font-weight: 700;
+}
+    /* Общий фон приоритета */
+.tm-priority{
+  background-color: #FFFACD !important;
+  color: #b45309 !important;            /
+  font-weight: 600;
+}
+    /* Средний — оставляем как сейчас (можно даже не писать, но оставлю явно) */
+.tm-priority--medium{
+  color: #b45309 !important;
+}
+    /* Высокий */
+.tm-priority--high{
+  color: #dc2626 !important; /* тёмно-красный текст */
+}
+    /* Низкий */
+.tm-priority--low{
+  color: #6495ED !important; /* серый */
+}
+/* Просроченная задача (student dashboard — лёгкий акцент) */
+.tm-task-overdue{
+  border-left: 4px solid #dc2626;
+  background-color: #fffefe;
+}
+/* Заголовок задачи */
+.task-title{
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;        /* тёмно-серый, современный */
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   5) Главная страница: hero, выбор роли, кастомная модалка
+   ========================================================================== */
+
 .hero-section {
     min-height: 100vh;
     display: flex;
@@ -5,27 +207,24 @@
     background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff8c42 100%);
     color: white;
 }
-
 .hero-title {
     font-size: 4rem;
     font-weight: 700;
     margin-bottom: 1rem;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
-
 .hero-subtitle {
     font-size: 1.5rem;
     margin-bottom: 3rem;
     opacity: 0.9;
 }
-
 .role-selection {
     display: flex;
     gap: 2rem;
     justify-content: center;
     flex-wrap: wrap;
 }
-
+/* Карточки входа */
 .role-card {
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(10px);
@@ -37,110 +236,21 @@
     border: 1px solid rgba(255,255,255,0.2);
     min-width: 250px;
 }
-
 .role-card:hover {
-    transform: translateY(-10px);
+    transform: scale(1.05);
     background: rgba(255,255,255,0.25);
     box-shadow: 0 15px 40px rgba(255,107,53,0.4);
 }
-
 .role-icon {
     font-size: 4rem;
     margin-bottom: 1rem;
 }
-
 .role-card h3 {
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
 }
-
-/* Модальное окно */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background: white;
-    padding: 3rem;
-    border-radius: 20px;
-    max-width: 400px;
-    width: 90%;
-    position: relative;
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.close {
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 2rem;
-    cursor: pointer;
-    color: #999;
-}
-
-.close:hover { color: #333; }
-
-.form-group input {
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 1rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.btn-login {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 1.2rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.btn-login:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(255, 107, 53, 0.4);
-}
-
-.register-link {
-    display: block;
-    text-align: center;
-    margin-top: 1.5rem;
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.register-link:hover {
-    text-decoration: underline;
-}
-.modal {
+/* Кастомная модалка (только главная страница) */
+.tm-modal {
     display: none;
     position: fixed;
     z-index: 1000;
@@ -152,25 +262,84 @@
     justify-content: center;
     align-items: center;
 }
-.modal-content {
-    background: white;
+.tm-modal-content {
+    background: #fff8f3;
     padding: 2rem;
-    border-radius: 10px;
+    border-radius: 20px;
     max-width: 400px;
     width: 90%;
     position: relative;
 }
-.role-card {
+.tm-modal-content h2 {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+     text-align: center;
+     color: #4da6ff;
+}
+    /* Google кнопка аккуратнее */
+.tm-modal-content .btn-danger {
+    background: #ffe5ec;
+    border: 1px solid #ffd1dc;
+    color: #c2185b;
+}
+.tm-modal-content .btn-danger:hover {
+    background: #ffd1dc;
+    border: #ffb3c6;
+    color: #a31545;
+}
+/* Крестик закрытия */
+.close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 2rem;
     cursor: pointer;
-    transition: transform 0.2s;
+    color: #999;
 }
-.role-card:hover {
-    transform: scale(1.05);
+.close:hover { color: #333; }
+/* Поля ввода в модалке */
+.form-group input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 1rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    transition: border-color 0.3s;
 }
-/* ФИКС для модального окна */
-#createTaskModal {
-  z-index: 1060 !important;
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
+/* Кнопки входа/регистрации в модалке */
+.btn-login {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.25s;
+}
+.btn-login:hover {
+    background: linear-gradient(135deg, #e85a2c 0%, #e67e22 100%);
+    transform: translateY(-2px);
+        box-shadow: 0 12px 25px rgba(255,107,53,0.4);
+        color: PaleGreen;
+}
+
+/* ==========================================================================
+   6) Фиксы и слои (z-index)
+   ========================================================================== */
+
+/* Фикс: Bootstrap модалки (иногда конфликтуют с кастомными слоями) */
 .modal-backdrop {
   z-index: 1050 !important;
 }
+/* Фикс: модалка создания задачи (teacher dashboard) */
+#createTaskModal {
+  z-index: 1060 !important;

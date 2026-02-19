@@ -4,48 +4,56 @@
 
 {% block content %}
 {% csrf_token %}
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
+
     <div class="row">
-        <div class="col-12">
-            <h1 class="mb-4">Личный кабинет учителя</h1>
-            <div class="card">
-                <div class="card-header">
-                    <strong>Профиль</strong>
-                </div>
-                <div class="card-body">
-                    <p><strong>Имя:</strong> {{ user.first_name }}</p>
-                    <p><strong>Телефон:</strong> {{ user.phone }}</p>
-                    <p><strong>Telegram:</strong> {{ user.telegram|default:"Не указан" }}</p>
-                </div>
-            </div>
+      <div class="col-12">
+        <div class="tm-page-header mb-4">
+          <h1 class="tm-page-title mb-1">Личный кабинет учителя</h1>
+          <div class="tm-page-subtitle">TaskMentor • управление учениками и задачами</div>
         </div>
+      </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <strong>Google Calendar</strong>
-                </div>
-                <div class="card-body">
-                    {% if has_calendar_token %}
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i> Google Calendar подключён
-                            <small class="d-block text-muted mt-1">Задачи будут автоматически синхронизироваться</small>
-                        </div>
-                    {% else %}
-                        <p>Подключите Google Calendar для синхронизации задач</p>
-                        <a href="/accounts/google/login/?process=connect&next=/teacher/dashboard/" class="btn btn-primary">
-                            <i class="fab fa-google"></i> Подключить Google Calendar
-                        </a>
-                        <small class="d-block text-muted mt-2">
-                            После подключения новые задачи будут автоматически добавляться в ваш календарь
-                        </small>
-                    {% endif %}
-                </div>
-            </div>
+    <div class="row g-3 mt-1">
+      <div class="col-12 col-lg-8">
+        <div class="card h-100 tm-card-soft">
+          <div class="card-header">
+            <strong>Профиль</strong>
+          </div>
+          <div class="card-body">
+            <p><strong>Имя:</strong> {{ user.first_name }}</p>
+            <p><strong>Телефон:</strong> {{ user.phone }}</p>
+            <p><strong>Telegram:</strong> {{ user.telegram|default:"Не указан" }}</p>
+          </div>
         </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card h-100 tm-card-soft">
+          <div class="card-header">
+            <strong>Google Calendar</strong>
+          </div>
+          <div class="card-body">
+            {% if has_calendar_token %}
+              <div class="alert tm-alert-calendar">
+                <i class="fas fa-check-circle"></i> Google Calendar подключён
+                <small class="d-block text-muted mt-1">Задачи будут автоматически синхронизироваться</small>
+              </div>
+            {% else %}
+              <p>Подключите Google Calendar для синхронизации задач</p>
+              <a href="/accounts/google/login/?process=connect&next=/teacher/dashboard/" class="btn btn-primary">
+                <i class="fab fa-google"></i> Подключить Google Calendar
+              </a>
+              <small class="d-block text-muted mt-2">
+                После подключения новые задачи будут автоматически добавляться в ваш календарь
+              </small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
     </div>
+
 
     <div class="row mt-4">
         <div class="col-12">
@@ -97,7 +105,9 @@
           <!-- Список учеников и создание задач -->
     <div class="row mt-5">
       <div class="col-12">
-        <h3>Мои ученики <span class="badge bg-success">{{ students.count }}</span></h3>
+        <h3 class="mb-3">Мои ученики
+          <span class="badge bg-success">{{ students.count }}</span>
+        </h3>
           <!-- Фильтр общий -->
           <form method="GET" class="mb-3">
              <select name="filter" onchange="this.form.submit()" class="form-select form-select-sm w-auto">
@@ -106,99 +116,94 @@
              </select>
            </form>
            <!-- ---------- -->
-        {% for student_profile in students %}
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between">
-            <strong>{{ student_profile.user.first_name }} ({{ student_profile.user.email }})</strong>
-            <span class="badge bg-info">{{ student_profile.user.tasks.count }} задач</span>
-          </div>
-          <div class="card-body">
-
-            <!-- Прогресс -->
-            <div class="mb-3">
-              <small>Прогресс: {{ student_profile.progress }}% ({{ student_profile.completed_tasks }}/
-                  {{ student_profile.total_tasks }})</small>
-              <div class="progress">
-                <div class="progress-bar" style="width: {{ student_profile.progress }}%;"></div>
+        <div class="row g-3">
+          {% for student_profile in students %}
+          <div class="col-12 col-lg-6">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between">
+                <strong>{{ student_profile.user.first_name }} ({{ student_profile.user.email }})</strong>
+                <span class="badge bg-info">{{ student_profile.user.tasks.count }} задач</span>
               </div>
-            </div>
-            <!-- Последние настроения -->
-            <div class="mb-2">
-              <small>Настроение (последние 7 дней):</small>
-              {% for mood in student_profile.recent_moods %}
-                <span class="badge
-                  {% if mood.mood == 'great' %}bg-success
-                  {% elif mood.mood == 'good' %}bg-warning
-                  {% else %}bg-danger{% endif %} me-1">
-                  {{ mood.get_mood_display }} {{ mood.date|date:"d.m" }}
-                </span>
-              {% empty %}
-                <span class="badge bg-secondary">нет данных</span>
-              {% endfor %}
-            </div>
-            <!-- --------------------- -->
-            <p><strong>Ник: </strong>{{ student_profile.nickname }}</p>
-            <button class="btn btn-primary btn-sm" onclick="openCreateTaskModal({{ student_profile.user.id }})">
-              Создать задачу
-            </button>
-            <!-- Список задач этого ученика -->
-            <div class="mt-3">
-              <h6>Задачи:</h6>
-                {% for task in student_profile.user.tasks.all %}
-                  {% if filter_status == 'all' or not task.is_completed %}
-                    <div class="task-item mb-1 p-2 border rounded" data-task-id="{{ task.id }}">
-                      <strong>{{ task.title }}</strong>
-                      <span class="badge {{ task.is_completed|yesno:'bg-success,bg-warning' }}">{{ task.is_completed|yesno:"✓,⏳" }}</span>
-<!--                      <small class="d-block">{{ task.due_date|date:"d.m.Y H:i" }}</small>-->
+              <div class="card-body">
 
-                      <small class="d-block">
-                        {% if not task.is_completed and task.due_date %}
-                          {% if task.due_date < now %}
-                            <span class="badge bg-danger me-1">Просрочено</span>
-                          {% endif %}
-                        {% endif %}
-                        {{ task.due_date|date:"d.m.Y H:i" }}
-                      </small>
-                      <!-- Приоритет:-->
-                      <small class="d-block text-muted">
-                        Приоритет:
-                        {% if task.priority == 'high' %}
-                          <span class="badge bg-danger">Высокий</span>
-                        {% elif task.priority == 'medium' %}
-                          <span class="badge bg-warning text-dark">Средний</span>
-                        {% else %}
-                          <span class="badge bg-secondary">Низкий</span>
-                        {% endif %}
-                      </small>
-                      <!-- Статус:-->
-<!--                      <small class="d-block text-muted">-->
-<!--                        {% if task.is_completed %}-->
-<!--                          <span class="badge bg-success">Выполнено</span>-->
-<!--                        {% else %}-->
-<!--                          <span class="badge bg-warning text-dark">Не выполнено</span>-->
-<!--                        {% endif %}-->
-<!--                      </small>-->
+                <!-- Прогресс -->
+                <div class="mb-3">
+                  <small>Прогресс: {{ student_profile.progress }}% ({{ student_profile.completed_tasks }}/
+                      {{ student_profile.total_tasks }})</small>
+                  <div class="progress">
+                    <div class="progress-bar" style="width: {{ student_profile.progress }}%;"></div>
+                  </div>
+                </div>
+                <!-- Последние настроения -->
+                <div class="mb-2">
+                  <small>Настроение (последние 7 дней):</small>
+                  {% for mood in student_profile.recent_moods %}
+                    <span class="badge
+                      {% if mood.mood == 'great' %}bg-success
+                      {% elif mood.mood == 'good' %}bg-warning
+                      {% else %}bg-danger{% endif %} me-1">
+                      {{ mood.get_mood_display }} {{ mood.date|date:"d.m" }}
+                    </span>
+                  {% empty %}
+                    <span class="badge bg-secondary">нет данных</span>
+                  {% endfor %}
+                </div>
+                <!-- --------------------- -->
+                <p><strong>Ник: </strong>{{ student_profile.nickname }}</p>
+                <button class="btn btn-primary btn-sm" onclick="openCreateTaskModal({{ student_profile.user.id }})">
+                  Создать задачу
+                </button>
+                <!-- Список задач этого ученика -->
+                <div class="mt-3">
+                  <h6>Задачи:</h6>
+                    {% for task in student_profile.user.tasks.all %}
+                      {% if filter_status == 'all' or not task.is_completed %}
+                        <div class="task-item mb-1 p-2 border rounded" data-task-id="{{ task.id }}">
+                          <strong>{{ task.title }}</strong>
+                          <span class="badge {{ task.is_completed|yesno:'bg-success,bg-warning' }}">{{ task.is_completed|yesno:"✓,⏳" }}</span>
 
-                      <div class="mt-1">
-                        {% if not task.is_completed %}
-                          <button class="btn btn-danger btn-sm me-1" onclick="deleteTask({{ task.id }})" title="Удалить">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                        {% endif %}
-                        <button class="btn btn-sm btn-outline-primary" onclick="openEditTaskModal({{ task.id }})">✏️</button>
-                      </div>
-                    </div>
-                  {% endif %}
-                {% empty %}
-                  <small class="text-muted">Нет задач</small>
-                {% endfor %}
-            </div>  <!-- /.mt-3 -->
-          </div>    <!-- /.card-body -->
-        </div>      <!-- /.card -->
+                          <small class="d-block">
+                            {% if not task.is_completed and task.due_date %}
+                              {% if task.due_date < now %}
+                                <span class="badge tm-badge-overdue me-1">Просрочено</span>
+                              {% endif %}
+                            {% endif %}
+                            {{ task.due_date|date:"d.m.Y H:i" }}
+                          </small>
+                          <!-- Приоритет:-->
+                          <small class="d-block text-muted">
+                            Приоритет:
+                            {% if task.priority == 'high' %}
+                              <span class="badge tm-priority tm-priority--high">Высокий</span>
+                            {% elif task.priority == 'medium' %}
+                              <span class="badge tm-priority tm-priority--medium">Средний</span>
+                            {% else %}
+                              <span class="badge tm-priority tm-priority--low">Низкий</span>
+                            {% endif %}
+                          </small>
+
+                          <div class="mt-1">
+                            {% if not task.is_completed %}
+                              <button class="btn btn-outline-primary btn-sm me-1" onclick="deleteTask({{ task.id }})" title="Удалить">🗑️
+<!--                                <i class="fas fa-trash"></i>-->
+                              </button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-primary" onclick="openEditTaskModal({{ task.id }})">✏️</button>
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% empty %}
+                      <small class="text-muted">Нет задач</small>
+                    {% endfor %}
+                </div>  <!-- /.mt-3 -->
+              </div>    <!-- /.card-body -->
+            </div>
+          </div> <!-- /.card -->
         {% empty %}
         <div class="alert alert-info">Нет учеников. Одобрите заявки выше.</div>
         {% endfor %}
-      </div>        <!-- /.col-12 -->
+       </div>
+        </div>        <!-- /.col-12 -->
     </div>          <!-- /.row mt-5 -->
 
 

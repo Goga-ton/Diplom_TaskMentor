@@ -18,14 +18,6 @@ def calendar_debug(*args):
 
 load_dotenv()
 
-# def _tz_name() -> str:
-#     # Берём текущую таймзону Django (в settings.py у тебя сейчас TIME_ZONE = 'UTC')
-#     try:
-#         return timezone.get_current_timezone_name()
-#     except Exception:
-#         return "UTC"
-
-
 def get_calendar_service(user):
     """
     Возвращает Google Calendar service для user (teacher), используя сохранённые токены.
@@ -65,8 +57,6 @@ def _task_to_event_body(task):
     if isinstance(due_dt, str):
         due_dt = parse_datetime(due_dt) or timezone.datetime.fromisoformat(due_dt)
 
-    # if timezone.is_naive(due_dt):
-        # due_dt = timezone.make_aware(due_dt, timezone.get_current_timezone())
     MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
     if timezone.is_naive(due_dt):

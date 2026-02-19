@@ -9,6 +9,40 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
+  <nav class="navbar navbar-expand-lg tm-navbar">
+    <div class="container">
+      <a class="navbar-brand tm-brand" href="{% url 'index' %}">TaskMentor</a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#tmNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="tmNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
+          {% if user.is_authenticated %}
+            {% if user.user_type == 'teacher' %}
+              <li class="nav-item">
+                <a class="nav-link tm-navlink" href="{% url 'teacher_dashboard' %}">Кабинет учителя</a>
+              </li>
+            {% elif user.user_type == 'student' %}
+              <li class="nav-item">
+                <a class="nav-link tm-navlink" href="{% url 'student_dashboard' %}">Кабинет ученика</a>
+              </li>
+            {% endif %}
+
+            <li class="nav-item">
+              <a class="btn btn-outline-light btn-sm tm-logout" href="{% url 'logout' %}">Выйти</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="btn btn-outline-light btn-sm" href="/accounts/google/login/">Google</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
     {% block content %}
     {% endblock %}
 
