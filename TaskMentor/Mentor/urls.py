@@ -9,7 +9,6 @@ import os
 urlpatterns = [
     path('', views.index, name='index'),
     path('register/teacher/', views.teacher_register, name='teacher_register'),
-    # path('register/student/', views.student_register, name='student_register'), # страница регистрации Ученика
     path('logout/', views.user_logout, name='logout'),
     path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('student/application/', views.student_application, name='student_application'),
@@ -21,7 +20,6 @@ urlpatterns = [
     path('get-task/<int:task_id>/', views.get_task_data, name='get_task_data'),
     path('complete-task/<int:task_id>/', views.complete_task, name='complete_task'),
     path('api/task/<int:task_id>/delete/', TaskDeleteView.as_view(), name='task_delete'),
-
     path('save-push-subscription/', views.save_push_subscription, name='save_push_subscription'),
     path("sw.js", views.service_worker, name="service_worker"),
     path("save-fcm-token/", views.save_fcm_token, name="save_fcm_token"),
@@ -31,19 +29,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += [
-        # path('js/sw.js', RedirectView.as_view(
-        #     url='/static/js/sw.js', permanent=False)),
         path('js/push.js', RedirectView.as_view(
             url='/static/js/push.js', permanent=False)),
     ]
-
-# urlpatterns += [
-#     path(
-#         "sw.js",
-#         TemplateView.as_view(
-#             template_name="sw.js",
-#             content_type="application/javascript"
-#         ),
-#         name="sw_js",
-#     ),
-# ]

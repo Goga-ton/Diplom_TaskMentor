@@ -80,12 +80,6 @@ async function subscribeUserToPush() {
     } else {
       console.log("✅ existing subscription reused");
     }
-//    console.log("🧷 VAPID used for subscribe:", vapidPublicKey);
-//    const subscription = await registration.pushManager.subscribe({
-//      userVisibleOnly: true,
-//      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-//    });
-//    console.log("✅ subscription created");
 
     const csrftoken = getCookie("csrftoken");
     console.log("🍪 csrftoken present:", !!csrftoken);

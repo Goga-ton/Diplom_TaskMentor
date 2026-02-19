@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_protect #csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 import json
@@ -17,7 +17,7 @@ from django.db.models.functions import TruncDay
 from datetime import timedelta
 from django.conf import settings
 import math
-# from pywebpush import webpush
+
 from .utils.google_calendar import (sync_task_for_teacher, sync_task_for_student,
                                     remove_task_for_teacher, remove_task_for_student)
 from .utils.firebase_fcm import send_fcm_to_token
@@ -156,7 +156,6 @@ def teacher_dashboard(request):
         status='pending' #показывает заявки только с этим статусом
     ).order_by('-created_at')
     student_profiles = StudentProfile.objects.filter(teacher=request.user).select_related('user')
-    # students = StudentProfile.objects.filter(teacher=request.user) # старая строка взамен той которая выше
 
     # === АНАЛИТИКА УЧИТЕЛЯ ===
     students_with_stats = []
@@ -228,10 +227,10 @@ def student_dashboard(request):
         .annotate(priority_weight=priority_weight_expr)
     )
 
-    # 2.4 + 2.4.1: Overdue — отдельной группой, high->medium->low, внутри — по самой большой просрочке
+    # Overdue — отдельной группой, high->medium->low, внутри — по самой большой просрочке
     overdue_qs = base_qs.filter(due_date__lt=now).order_by('-priority_weight', 'due_date')
 
-    # Остальные (пока просто по дате, дальше заменим на срочность из 2.1)
+    # Остальные (пока просто по дате, дальше заменим на срочность )
     upcoming_qs = base_qs.filter(due_date__gte=now).order_by('due_date')
 
     if view_mode == '24hours':
@@ -415,24 +414,6 @@ def create_task(request):
             is_completed=False
         )
 
-        # ✅ Синхронизация с Google Calendar (если включено)
-        # should_sync = (
-        #         request.POST.get("sync_calendar") == "on"
-        #         and request.user.user_type == "teacher"
-        # )
-        #
-        # if should_sync:
-        #     if GoogleCalendarToken.objects.filter(user=request.user).exists():
-        #         try:
-        #             sync_task_to_calendar(request.user, task, "teacher_calendar_event_id")
-        #         except Exception:
-        #             pass
-        #     if GoogleCalendarToken.objects.filter(user=student).exists():
-        #         try:
-        #             sync_task_to_calendar(student, task, "student_calendar_event_id")
-        #         except Exception:
-        #             pass
-
         if (request.POST.get("sync_calendar") == "on"
                 and GoogleCalendarToken.objects.filter(user=request.user).exists()):
             try:
@@ -471,21 +452,6 @@ def edit_task(request):
         task.due_date = due_dt
 
         task.save()
-        # ✅ Синхронизация с Google Calendar при редактировании
-        # if (request.POST.get('sync_calendar') == 'on'
-        #         and request.user.user_type == 'teacher'):
-        #     if GoogleCalendarToken.objects.filter(user=request.user).exists():
-        #         try:
-        #         # sync_task_to_calendar(request.user, task)  # update если есть event_id, иначе create
-        #             sync_task_to_calendar(request.user, task, "teacher_calendar_event_id")
-        #             # sync_task_to_calendar(task.student, task, "student_calendar_event_id")
-        #         except Exception:
-        #             pass
-        #     if GoogleCalendarToken.objects.filter(user=task.student).exists():
-        #         try:
-        #             sync_task_to_calendar(task.student, task, "student_calendar_event_id")
-        #         except Exception:
-        #             pass
 
         if (request.POST.get("sync_calendar") == "on"
                 and GoogleCalendarToken.objects.filter(user=request.user).exists()):
@@ -546,20 +512,6 @@ class TaskDeleteView(LoginRequiredMixin, View):
         if task.is_completed:
             return JsonResponse({'error': 'Можно удалять только не выполненные задачи.'}, status=400)
 
-        # ✅ Если у задачи было событие — удаляем его из календаря
-        # if (task.teacher_calendar_event_id
-        #         and GoogleCalendarToken.objects.filter(user=request.user).exists()):
-        #     try:
-        #         remove_task_from_calendar(request.user, task, "teacher_calendar_event_id")
-        #     except Exception:
-        #         pass
-        # if (task.student_calendar_event_id
-        #         and GoogleCalendarToken.objects.filter(user=task.student).exists()):
-        #     try:
-        #         remove_task_from_calendar(task.student, task, "student_calendar_event_id")
-        #     except Exception:
-        #         pass
-        # удалить у учителя
         if GoogleCalendarToken.objects.filter(user=request.user).exists():
             try:
                 remove_task_for_teacher(request.user, task)
@@ -575,50 +527,6 @@ class TaskDeleteView(LoginRequiredMixin, View):
 
         task.delete()
         return JsonResponse({'success': True, 'message': 'Задача удалена.'})
-
-
-# @csrf_exempt
-# @require_POST
-# def subscribe_push(request):
-#     try:
-#         # Парсим JSON из тела запроса
-#         body = json.loads(request.body)
-#         endpoint = body['endpoint']
-#         keys = body['keys']
-#
-#         WebPushSubscription.objects.update_or_create(
-#             user=request.user,
-#             endpoint=endpoint,
-#             defaults={
-#                 'p256dh': keys['p256dh'],
-#                 'auth': keys['auth'],
-#             }
-#         )
-#         return JsonResponse({'status': 'ok'})
-#
-#     except Exception as e:
-#         return JsonResponse({'error': str(e)}, status=500)
-
-# @csrf_exempt
-# @require_POST
-# def test_notification(request):
-#     for sub in request.user.push_subscriptions.all():
-#         try:
-#             webpush(
-#                 subscription_info={
-#                     "endpoint": sub.endpoint,
-#                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
-#                 },
-#                 data=json.dumps({  # ← json.dumps!
-#                     "title": "🔔 TaskMentor",
-#                     "body": "Тест push!"
-#                 }),
-#                 vapid_private_key=settings.WEBPUSH_SETTINGS["VAPID_PRIVATE_KEY"],
-#                 vapid_claims={"sub": settings.WEBPUSH_SETTINGS["VAPID_ADMIN_EMAIL"]}
-#             )
-#         except Exception:
-#             pass
-#     return JsonResponse({'status': 'sent'})
 
 @login_required
 @require_POST
