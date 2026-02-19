@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Локальный запуск, False для Продакшина и там еще кучу настроек нужно будет делать
-DEBUG_CALENDAR_SYNC = True  # отладочные print'ы для Google Calendar sync False выключит принты
+DEBUG_CALENDAR_SYNC = False  # отладочные print'ы для Google Calendar sync False выключит принты
 
 ALLOWED_HOSTS = [] #если DEBUG = False тогда в скобках ("127.0.0.1", "localhost"), если True тогда ничего
 
